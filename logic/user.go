@@ -3,6 +3,7 @@ package logic
 import (
 	"agricultural_vision/dao/mysql"
 	"agricultural_vision/models"
+	"agricultural_vision/pkg/gomail"
 	"agricultural_vision/pkg/jwt"
 	"agricultural_vision/pkg/snowflake"
 	"time"
@@ -11,9 +12,13 @@ import (
 // 用户注册
 func SingUp(p *models.SignUpParam) error {
 	//1.判断用户存不存在
-	err := mysql.CheckUserExist(p.Username)
-	if err != nil {
+	if err := mysql.CheckUserExist(p.Username); err != nil {
 		//数据库查询出错
+		return err
+	}
+
+	//2.判断邮箱验证码是否正确
+	if err := gomail.VerifyVerificationCode(p.Email, p.VerificationCode); err != nil {
 		return err
 	}
 
@@ -30,7 +35,7 @@ func SingUp(p *models.SignUpParam) error {
 	}
 
 	//3.保存进数据库
-	err = mysql.InsertUser(&user)
+	err := mysql.InsertUser(&user)
 	return err
 }
 

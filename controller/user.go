@@ -1,13 +1,33 @@
 package controller
 
 import (
-	"agricultural_vision/dao/mysql"
 	"agricultural_vision/logic"
 	"agricultural_vision/models"
+	"agricultural_vision/pkg/gomail"
+	"agricultural_vision/response"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
+
+// 发送邮箱验证码
+func VerifyEmailHandler(c *gin.Context) {
+	// 参数绑定
+	sendVerificationCodeParam := new(models.SendVerificationCodeParam)
+	if err := c.ShouldBindJSON(&sendVerificationCodeParam); err != nil {
+		ResponseError(c, response.CodeInvalidParam)
+		return
+	}
+
+	// 发送邮箱验证码校验邮箱
+	if err := gomail.SendVerificationCode(sendVerificationCodeParam.Email); err != nil {
+		zap.L().Error("发送邮箱验证码失败", zap.Error(err))
+		ResponseError(c, response.CodeServerBusy)
+		return
+	}
+
+	ResponseSuccess(c, nil)
+}
 
 // 用户注册
 func SignUpHandler(c *gin.Context) {
@@ -17,7 +37,7 @@ func SignUpHandler(c *gin.Context) {
 	if err != nil {
 		//请求参数有误，直接返回响应
 		zap.L().Error("参数校验失败", zap.Error(err))
-		ResponseError(c, CodeInvalidParam)
+		ResponseError(c, response.CodeInvalidParam)
 		return
 	}
 
@@ -26,13 +46,15 @@ func SignUpHandler(c *gin.Context) {
 	//如果出现错误
 	if err != nil {
 		zap.L().Error("注册失败", zap.Error(err))
-		//如果是用户已存在的错误
-		if errors.Is(err, mysql.ErrorUserExist) {
-			ResponseError(c, CodeUserExist)
+		if errors.Is(err, response.ErrorUserExist) { //如果是用户已存在的错误
+			ResponseError(c, response.CodeUserExist)
+			return
+		} else if errors.Is(err, response.ErrorInvalidEmailCode) { //如果是邮箱验证码错误
+			ResponseError(c, response.CodeInvalidEmailCode)
 			return
 		}
 		//如果是其他错误，返回服务端繁忙错误信息
-		ResponseError(c, CodeServerBusy)
+		ResponseError(c, response.CodeServerBusy)
 		return
 	}
 
@@ -49,7 +71,7 @@ func LoginHandler(c *gin.Context) {
 	if err != nil {
 		//请求参数有误，直接返回响应
 		zap.L().Error("参数校验失败", zap.Error(err))
-		ResponseError(c, CodeInvalidParam)
+		ResponseError(c, response.CodeInvalidParam)
 		return
 	}
 
@@ -57,14 +79,14 @@ func LoginHandler(c *gin.Context) {
 	token, err := logic.Login(p)
 	if err != nil {
 		zap.L().Error("登录失败", zap.String("email", p.Email), zap.Error(err))
-		if errors.Is(err, mysql.ErrorUserNotExist) { //如果是用户不存在错误
-			ResponseError(c, CodeUserNotExist)
+		if errors.Is(err, response.ErrorUserNotExist) { //如果是用户不存在错误
+			ResponseError(c, response.CodeUserNotExist)
 			return
-		} else if errors.Is(err, mysql.ErrorInvalidPassword) { //如果是密码不正确错误
-			ResponseError(c, CodeInvalidPassword)
+		} else if errors.Is(err, response.ErrorInvalidPassword) { //如果是密码不正确错误
+			ResponseError(c, response.CodeInvalidPassword)
 			return
 		} else { //否则返回服务端繁忙错误
-			ResponseError(c, CodeServerBusy)
+			ResponseError(c, response.CodeServerBusy)
 			return
 		}
 	}

@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"agricultural_vision/models"
+	"agricultural_vision/response"
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
@@ -21,7 +22,7 @@ func CheckUserExist(username string) error {
 	}
 	// 如果用户已存在，返回错误
 	if count > 0 {
-		return ErrorUserExist
+		return response.ErrorUserExist
 	}
 	return nil
 }
@@ -57,14 +58,14 @@ func Login(email, password string) (*models.User, error) {
 	err := DB.Where("email = ?", email).First(user).Error
 	// 如果查询不到用户，返回用户不存在错误
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return user, ErrorUserNotExist
+		return user, response.ErrorUserNotExist
 	}
 
 	// 判断密码是否正确
 	password = encryptPassword(password)
 	// 如果密码不正确，返回密码不正确错误
 	if password != user.Password {
-		return user, ErrorInvalidPassword
+		return user, response.ErrorInvalidPassword
 	}
 
 	return user, nil

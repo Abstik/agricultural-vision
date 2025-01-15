@@ -18,6 +18,8 @@ func SetupRouter(mode string) *gin.Engine {
 
 	//注册业务路由
 	v1 := r.Group("/api/v1")
+	//校验邮箱
+	v1.POST("/email", controller.VerifyEmailHandler)
 	//用户注册
 	v1.POST("/signup", controller.SignUpHandler)
 	//用户登录
