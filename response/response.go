@@ -1,9 +1,11 @@
 package response
 
 import (
-	"agricultural_vision/models"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+
+	"agricultural_vision/models"
 )
 
 //封装响应信息
@@ -22,8 +24,8 @@ func ResponseSuccess(c *gin.Context, data interface{}) {
 	})
 }
 
-func ResponseError(c *gin.Context, msg string) {
-	c.JSON(http.StatusOK, &ResponseData{
+func ResponseError(c *gin.Context, httpStatus int, msg string) {
+	c.JSON(httpStatus, &ResponseData{
 		Code: 0,
 		Msg:  msg,
 		Data: nil,

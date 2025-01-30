@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"agricultural_vision/settings"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -14,6 +13,8 @@ import (
 	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"agricultural_vision/settings"
 )
 
 var lg *zap.Logger

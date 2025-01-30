@@ -1,9 +1,9 @@
 package jwt
 
 import (
-	"errors"
-	"github.com/dgrijalva/jwt-go"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 const TokenExpireDuration = time.Hour * 24 * 365 //定义过期时间
@@ -29,7 +29,7 @@ func GenToken(userID int64, username string) (string, error) {
 		username,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(TokenExpireDuration).Unix(), //过期时间
-			Issuer:    "bluebell",                                 //签发人
+			Issuer:    "JiBoWen",                                  //签发人
 		},
 	}
 	// 使用指定的签名方法创建签名对象
@@ -48,14 +48,16 @@ func ParseToken(tokenString string) (*MyClaims, error) {
 		//token, err := jwt.Parse(tokenString, func(token *jwt.Token) (i interface{}, err error) {
 		return mySecret, nil
 	})
+	// 如果解析失败
 	if err != nil {
 		return nil, err
 	}
 
-	if token.Valid { // 校验token
-		//如果令牌有效，返回令牌
-		return mc, nil
+	// 如果令牌无效
+	if !token.Valid {
+		return nil, err
 	}
-	//如果令牌无效，返回错误
-	return nil, errors.New("invalid token")
+
+	//如果令牌有效
+	return mc, nil
 }

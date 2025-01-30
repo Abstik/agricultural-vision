@@ -1,13 +1,14 @@
 package gomail
 
 import (
-	"agricultural_vision/models"
 	"fmt"
-	"gopkg.in/gomail.v2"
 	"math/rand"
 	"time"
 
 	"github.com/patrickmn/go-cache"
+	"gopkg.in/gomail.v2"
+
+	"agricultural_vision/models"
 )
 
 var (

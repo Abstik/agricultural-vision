@@ -1,10 +1,11 @@
 package redis
 
 import (
-	"agricultural_vision/settings"
 	"fmt"
 
 	"github.com/go-redis/redis"
+
+	"agricultural_vision/settings"
 )
 
 var (
