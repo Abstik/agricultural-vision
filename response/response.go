@@ -1,4 +1,4 @@
-package controller
+package response
 
 import (
 	"agricultural_vision/models"

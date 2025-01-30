@@ -79,7 +79,7 @@ func SendVerificationCode(toEmail string) error {
 // 校验验证码
 func VerifyVerificationCode(email string, code string) error {
 	cachedCode, found := verificationCodeCache.Get(email)
-	fmt.Println("验证码应该为：", cachedCode)
+	fmt.Println("验证码应为：", cachedCode)
 
 	// 如果找不到验证码或验证码已过期
 	if !found {

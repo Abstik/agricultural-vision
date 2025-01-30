@@ -1,9 +1,9 @@
 package middlewares
 
 import (
-	"agricultural_vision/controller"
 	"agricultural_vision/models"
 	"agricultural_vision/pkg/jwt"
+	"agricultural_vision/response"
 	"github.com/gin-gonic/gin"
 	"strings"
 )
@@ -18,7 +18,7 @@ func JWTAuthMiddleware() func(c *gin.Context) {
 		authHeader := c.Request.Header.Get("Authorization")
 		//如果未携带令牌，代表没有登录
 		if authHeader == "" {
-			controller.ResponseError(c, models.CodeNeedLogin)
+			response.ResponseError(c, models.CodeNeedLogin)
 			c.Abort()
 			return
 		}
@@ -26,7 +26,7 @@ func JWTAuthMiddleware() func(c *gin.Context) {
 		// 按空格分割
 		parts := strings.SplitN(authHeader, " ", 2)
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			controller.ResponseError(c, models.CodeInvalidAToken)
+			response.ResponseError(c, models.CodeInvalidAToken)
 			c.Abort()
 			return
 		}
@@ -34,13 +34,13 @@ func JWTAuthMiddleware() func(c *gin.Context) {
 		// parts[1]是获取到的tokenString，我们使用之前定义好的解析JWT的函数来解析它
 		mc, err := jwt.ParseToken(parts[1])
 		if err != nil {
-			controller.ResponseError(c, models.CodeInvalidAToken)
+			response.ResponseError(c, models.CodeInvalidAToken)
 			c.Abort()
 			return
 		}
 
 		// 将当前请求的userID信息保存到请求的上下文c上
-		c.Set(controller.ContextUserIDKey, mc.UserID)
+		c.Set(ContextUserIDKey, mc.UserID)
 		c.Next() // 后续的处理函数可以用过c.Get(ContextUserIDKey)来获取当前请求的用户信息
 	}
 }
