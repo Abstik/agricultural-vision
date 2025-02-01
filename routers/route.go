@@ -41,7 +41,6 @@ func SetupRouter(mode string) *gin.Engine {
 
 	// 应用JWT认证中间件
 	r.Use(middleware.JWTAuthMiddleware())
-
 	{
 		// 查询个人信息
 		r.GET("/user", controller.GetUserInfoHandler)

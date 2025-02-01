@@ -52,7 +52,7 @@ func Login(email, password string) (*models.User, error) {
 
 // 根据用户ID更新用户信息
 func UpdateUserByID(user *models.User) error {
-	err := DB.Model(&models.User{}).Where("id = ?", user.UserID).Updates(user).Error
+	err := DB.Model(&models.User{}).Where("id = ?", user.Id).Updates(user).Error
 	return err
 }
 

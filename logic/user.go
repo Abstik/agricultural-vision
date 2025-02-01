@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"agricultural_vision/pkg/snowflake"
 	"time"
 
 	"agricultural_vision/dao/mysql"
@@ -14,7 +15,7 @@ import (
 func SingUp(p *models.SignUpParam) error {
 	// 判断邮箱是否已注册
 	flag, err := mysql.CheckEmailExist(p.Email)
-	//如果数据库查询出错
+	// 如果数据库查询出错
 	if err != nil {
 		return err
 	}
@@ -24,6 +25,7 @@ func SingUp(p *models.SignUpParam) error {
 	}
 
 	user := models.User{
+		Id:          snowflake.GenID(),
 		Username:    p.Username,
 		Password:    md5.EncryptPassword(p.Password),
 		Email:       p.Email,
@@ -45,7 +47,7 @@ func Login(p *models.LoginParam) (string, error) {
 	}
 
 	//生成JWT
-	token, err := auth.GenToken(user.UserID, user.Username)
+	token, err := auth.GenToken(user.Id, user.Username)
 	return token, err
 }
 
@@ -104,10 +106,9 @@ func UpdateUserInfo(p *models.UpdateUserInfoParam, id int64) error {
 
 	// 2. 更新用户信息
 	newUser := models.User{
+		Id:          id,
 		Username:    p.Username,
-		Password:    md5.EncryptPassword(p.Password),
 		Email:       p.Email,
-		CreatedTime: time.Now(),
 		UpdatedTime: time.Now(),
 	}
 

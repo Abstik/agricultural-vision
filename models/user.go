@@ -5,10 +5,10 @@ import (
 )
 
 type User struct {
-	UserID      int64     `gorm:"primaryKey" json:"user_id"`
-	Username    string    `gorm:"not null;type:varchar(64)" json:"username"`
-	Email       string    `gorm:"not null;unique;type:varchar(64)" json:"email"`
-	Password    string    `gorm:"not null;type:varchar(64)" json:"password"`
-	CreatedTime time.Time `gorm:"type:datetime" json:"created_time"`
-	UpdatedTime time.Time `gorm:"type:datetime" json:"updated_time"`
+	Id          int64     `gorm:"primaryKey" json:"-"`
+	Username    string    `gorm:"type:varchar(64);not null" json:"username"`
+	Email       string    `gorm:"type:varchar(64);not null;unique" json:"email"`
+	Password    string    `gorm:"type:varchar(64);not null" json:"-"`
+	CreatedTime time.Time `gorm:"type:datetime" json:"-"`
+	UpdatedTime time.Time `gorm:"type:datetime" json:"-"`
 }

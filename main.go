@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"agricultural_vision/dao/mysql"
 	"agricultural_vision/dao/redis"
 	"agricultural_vision/logger"
@@ -8,7 +10,6 @@ import (
 	"agricultural_vision/routers"
 	"agricultural_vision/settings"
 	"agricultural_vision/utils"
-	"fmt"
 )
 
 func main() {
