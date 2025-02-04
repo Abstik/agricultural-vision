@@ -13,7 +13,7 @@ import (
 
 // 用户注册
 func SingUp(p *models.SignUpParam) error {
-	// 判断邮箱是否已注册
+	// 1.判断邮箱是否已注册
 	flag, err := mysql.CheckEmailExist(p.Email)
 	// 如果数据库查询出错
 	if err != nil {
@@ -22,6 +22,11 @@ func SingUp(p *models.SignUpParam) error {
 	// 如果邮箱已注册
 	if flag {
 		return models.ErrorEmailExist
+	}
+
+	// 2.校验邮箱
+	if err = gomail.VerifyVerificationCode(p.Email, p.Code); err != nil {
+		return models.ErrorInvalidEmailCode
 	}
 
 	user := models.User{
@@ -33,7 +38,7 @@ func SingUp(p *models.SignUpParam) error {
 		UpdatedTime: time.Now(),
 	}
 
-	// 保存进数据库
+	// 3.保存进数据库
 	err = mysql.InsertUser(&user)
 	return err
 }

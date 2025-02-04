@@ -36,6 +36,11 @@ func SignUpHandler(c *gin.Context) {
 			response.ResponseError(c, http.StatusBadRequest, models.CodeEmailExist)
 			return
 		}
+		//如果是邮箱验证码错误
+		if errors.Is(err, models.ErrorInvalidEmailCode) {
+			response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidEmailCode)
+			return
+		}
 		//如果是其他错误，返回服务端繁忙错误信息
 		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
 		return

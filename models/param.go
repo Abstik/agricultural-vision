@@ -6,6 +6,7 @@ package models
 type SignUpParam struct {
 	Username string `json:"username" binding:"required"`
 	Email    string `json:"email" binding:"required"`
+	Code     string `json:"code" binding:"required"` // 邮箱验证码
 	Password string `json:"password" binding:"required"`
 }
 
