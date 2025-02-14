@@ -9,4 +9,5 @@ var (
 	ErrorEmailNotExist    = errors.New(CodeEmailNotExist)
 	ErrorInvalidPassword  = errors.New(CodeInvalidPassword)
 	ErrorInvalidEmailCode = errors.New(CodeInvalidEmailCode)
+	ErrorAiNotAnswer      = errors.New(CodeAiNotAnswer)
 )

@@ -13,5 +13,6 @@ const (
 	CodeInvalidEmailCode string = "邮箱验证码错误"
 	CodeNeedLogin        string = "用户需要登录"
 	CodeInvalidAToken    string = "无效的token"
+	CodeAiNotAnswer      string = "AI未回答"
 	CodeServerBusy       string = "服务繁忙"
 )

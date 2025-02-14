@@ -33,3 +33,32 @@ type UpdateUserInfoParam struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 }
+
+// 向AI请求体结构体
+type Message struct {
+	Content string `json:"content"`
+	Role    string `json:"role"`
+}
+
+// 响应体结构体
+type Choice struct {
+	Message struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	} `json:"message"`
+}
+
+// 接收AI响应的结构体
+type ApiResponse struct {
+	Choices []Choice `json:"choices"`
+}
+
+// 接收前端请求的结构体
+type AiRequest struct {
+	UserInput string `json:"user_input"` // 前端传来的问题
+}
+
+// 向前端响应结构体
+type AiResponse struct {
+	Answer string `json:"answer"` // AI 的回答
+}

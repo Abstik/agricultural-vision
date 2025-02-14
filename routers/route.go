@@ -1,12 +1,12 @@
 package routers
 
 import (
+	"agricultural_vision/controller"
 	"net/http"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
-	"agricultural_vision/controller"
 	"agricultural_vision/logger"
 	"agricultural_vision/middleware"
 )
@@ -47,6 +47,9 @@ func SetupRouter(mode string) *gin.Engine {
 		// 修改个人信息
 		r.PUT("/user", controller.UpdateUserInfoHandler)
 	}
+
+	// ai对话
+	r.POST("/ai", controller.AiHandler)
 
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
