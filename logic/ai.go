@@ -49,7 +49,9 @@ func AiTalk(aiRequest *models.AiRequest) (aiResponse *models.AiResponse, err err
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
 
 	// 读取响应体
 	bodyBytes, err := io.ReadAll(resp.Body)
