@@ -38,6 +38,8 @@ func SetupRouter(mode string) *gin.Engine {
 	r.POST("/email", controller.VerifyEmailHandler)
 	// 修改密码
 	r.POST("/changePassword", controller.ChangePasswordHandler)
+	// ai对话
+	r.POST("/ai", controller.AiHandler)
 
 	// 应用JWT认证中间件
 	r.Use(middleware.JWTAuthMiddleware())
@@ -47,9 +49,6 @@ func SetupRouter(mode string) *gin.Engine {
 		// 修改个人信息
 		r.PUT("/user", controller.UpdateUserInfoHandler)
 	}
-
-	// ai对话
-	r.POST("/ai", controller.AiHandler)
 
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{

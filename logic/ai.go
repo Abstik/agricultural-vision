@@ -11,6 +11,8 @@ import (
 )
 
 func AiTalk(aiRequest *models.AiRequest) (aiResponse *models.AiResponse, err error) {
+	aiResponse = new(models.AiResponse)
+
 	// 构建请求体
 	messages := []models.Message{
 		{"你是一个农业小助手", "system"},
