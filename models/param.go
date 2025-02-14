@@ -1,5 +1,7 @@
 package models
 
+import "sync"
+
 // 定义请求的参数结构体（DTO）
 
 // 用户注册请求参数
@@ -51,6 +53,12 @@ type Choice struct {
 // 接收AI响应的结构体
 type ApiResponse struct {
 	Choices []Choice `json:"choices"`
+}
+
+// 定义用于保存对话上下文的结构体
+type Conversation struct {
+	Messages []Message
+	Mutex    sync.Mutex // 确保线程安全
 }
 
 // 接收前端请求的结构体

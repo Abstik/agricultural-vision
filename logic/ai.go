@@ -2,22 +2,40 @@ package logic
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
-
-	"github.com/goccy/go-json"
+	"strconv"
+	"sync"
 
 	"agricultural_vision/models"
 )
 
-func AiTalk(aiRequest *models.AiRequest) (aiResponse *models.AiResponse, err error) {
-	aiResponse = new(models.AiResponse)
+var userConversations = make(map[string]*models.Conversation) // 使用 map 保存每个用户的对话历史
+var mutex = sync.Mutex{}                                      // 保护 map 的并发访问
 
-	// 构建请求体
-	messages := []models.Message{
-		{"你是一个农业小助手", "system"},
-		{aiRequest.UserInput, "user"},
+func AiTalk(aiRequest *models.AiRequest, userID int64) (aiResponse *models.AiResponse, err error) {
+	aiResponse = new(models.AiResponse)
+	id := strconv.FormatInt(userID, 10)
+
+	// 获取或创建该用户的对话历史
+	mutex.Lock() // 锁住整个 map，确保线程安全
+	conversation, exists := userConversations[id]
+	if !exists {
+		// 用户没有对话历史，创建一个新的
+		conversation = &models.Conversation{
+			Messages: []models.Message{
+				{Content: "你是一个农业小助手", Role: "system"},
+			},
+		}
+		userConversations[id] = conversation
 	}
+	mutex.Unlock()
+
+	// 将用户输入添加到对话历史中
+	conversation.Mutex.Lock()
+	conversation.Messages = append(conversation.Messages, models.Message{Content: aiRequest.UserInput, Role: "user"})
+	conversation.Mutex.Unlock()
 
 	// 向 DeepSeek AI 发送请求
 	apiKey := "sk-0a03ab3a2d18455e97d0a40f4fc20671"
@@ -25,7 +43,7 @@ func AiTalk(aiRequest *models.AiRequest) (aiResponse *models.AiResponse, err err
 
 	// 构建请求体
 	body := map[string]interface{}{
-		"messages":   messages,
+		"messages":   conversation.Messages,
 		"model":      "deepseek-chat",
 		"max_tokens": 100,
 		"stream":     false,
@@ -71,6 +89,12 @@ func AiTalk(aiRequest *models.AiRequest) (aiResponse *models.AiResponse, err err
 	// 获取 AI 的回答
 	if len(apiResponse.Choices) > 0 {
 		aiAnswer := apiResponse.Choices[0].Message.Content
+
+		// 将 AI 的回答添加到对话历史中
+		conversation.Mutex.Lock()
+		conversation.Messages = append(conversation.Messages, models.Message{Content: aiAnswer, Role: "assistant"})
+		conversation.Mutex.Unlock()
+
 		// 返回 AI 的回答给前端
 		aiResponse.Answer = aiAnswer
 		return
