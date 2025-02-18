@@ -70,3 +70,11 @@ type AiRequest struct {
 type AiResponse struct {
 	Answer string `json:"answer"` // AI 的回答
 }
+
+// 向前端返回首页数据
+type FirstPage struct {
+	News    []News    `json:"news"`    //新闻
+	Proverb []Proverb `json:"proverb"` //谚语
+	Crop    []Crop    `json:"crop"`
+	Video   []string  `json:"video"` //短视频
+}

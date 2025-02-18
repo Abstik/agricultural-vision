@@ -5,6 +5,7 @@ import (
 	"agricultural_vision/models"
 )
 
-func InitSqlTable() {
-	mysql.DB.AutoMigrate(&models.User{})
+func InitSqlTable() (err error) {
+	err = mysql.DB.AutoMigrate(&models.User{}, &models.News{}, &models.Proverb{}, &models.Crop{}, &models.Video{})
+	return
 }

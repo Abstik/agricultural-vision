@@ -25,7 +25,7 @@ func AiTalk(aiRequest *models.AiRequest, userID int64) (aiResponse *models.AiRes
 		// 用户没有对话历史，创建一个新的
 		conversation = &models.Conversation{
 			Messages: []models.Message{
-				{Content: "你是一个农业小助手", Role: "system"},
+				{Content: "你是一个农业小助手，回答时使用纯文本，不是用markdown语法，语言尽量简练", Role: "system"},
 			},
 		}
 		userConversations[id] = conversation

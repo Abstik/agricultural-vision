@@ -30,8 +30,13 @@ func main() {
 		fmt.Printf("init mysql failed, err:%v\n", err)
 		return
 	}
-	defer mysql.Close()  // 程序退出关闭数据库连接
-	utils.InitSqlTable() // 建表
+	defer mysql.Close() // 程序退出关闭数据库连接
+
+	// 建表
+	if err := utils.InitSqlTable(); err != nil {
+		fmt.Printf("init sql table failed, err:%v\n", err)
+		return
+	}
 
 	//初始化redis
 	if err := redis.Init(settings.Conf.RedisConfig); err != nil {
@@ -48,6 +53,7 @@ func main() {
 
 	// 注册路由
 	r := routers.SetupRouter(settings.Conf.Mode)
+	r.Static("/static", "./static")
 	err := r.Run(fmt.Sprintf(":%d", settings.Conf.Port))
 	if err != nil {
 		fmt.Printf("run server failed, err:%v\n", err)

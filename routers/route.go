@@ -48,6 +48,8 @@ func SetupRouter(mode string) *gin.Engine {
 		r.PUT("/user", controller.UpdateUserInfoHandler)
 		// ai对话
 		r.POST("/ai", controller.AiHandler)
+		// 查询首页信息
+		r.GET("/firstPage", controller.GetFirstPageHandler)
 	}
 
 	r.NoRoute(func(c *gin.Context) {
