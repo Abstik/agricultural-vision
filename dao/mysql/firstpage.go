@@ -2,21 +2,29 @@ package mysql
 
 import "agricultural_vision/models"
 
-func GetFirstPage() (*models.FirstPage, error) {
-	firstPage := &models.FirstPage{}
+func GetNews() (news []models.News, err error) {
+	if err = DB.Model(&models.News{}).Find(&news).Error; err != nil {
+		return
+	}
+	return
+}
 
-	if err := DB.Model(&models.News{}).Find(&firstPage.News).Error; err != nil {
-		return nil, err
+func GetProverb() (proverbs []models.Proverb, err error) {
+	if err = DB.Model(&models.Proverb{}).Find(&proverbs).Error; err != nil {
+		return
 	}
-	if err := DB.Model(&models.Proverb{}).Find(&firstPage.Proverb).Error; err != nil {
-		return nil, err
-	}
-	if err := DB.Model(&models.Crop{}).Find(&firstPage.Crop).Error; err != nil {
-		return nil, err
-	}
-	if err := DB.Model(&models.Video{}).Find(&firstPage.Video).Error; err != nil {
-		return nil, err
-	}
+	return
+}
 
-	return firstPage, nil
+func GetCrop() (crops []models.CropCategory, err error) {
+	if err = DB.Preload("CropDetails").Find(&crops).Error; err != nil {
+		return
+	}
+	return
+}
+func GetVideo() (videos []models.Video, err error) {
+	if err = DB.Model(&models.Video{}).Find(&videos).Error; err != nil {
+		return
+	}
+	return
 }

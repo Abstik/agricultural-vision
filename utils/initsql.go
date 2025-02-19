@@ -6,6 +6,13 @@ import (
 )
 
 func InitSqlTable() (err error) {
-	err = mysql.DB.AutoMigrate(&models.User{}, &models.News{}, &models.Proverb{}, &models.Crop{}, &models.Video{})
+	err = mysql.DB.AutoMigrate(
+		&models.User{},
+		&models.News{},
+		&models.Proverb{},
+		&models.CropCategory{},
+		&models.CropDetail{},
+		&models.Video{},
+	)
 	return
 }
