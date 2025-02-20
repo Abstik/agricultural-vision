@@ -22,6 +22,7 @@ func GetCrop() (crops []models.CropCategory, err error) {
 	}
 	return
 }
+
 func GetVideo() (videos []models.Video, err error) {
 	if err = DB.Model(&models.Video{}).Find(&videos).Error; err != nil {
 		return

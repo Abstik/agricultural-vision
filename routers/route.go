@@ -30,33 +30,37 @@ func SetupRouter(mode string) *gin.Engine {
 		AllowCredentials: true,
 	}))
 
-	// 用户注册
-	r.POST("/signup", controller.SignUpHandler)
-	// 用户登录
-	r.POST("/login", controller.LoginHandler)
-	// 发送邮箱验证码
-	r.POST("/email", controller.VerifyEmailHandler)
-	// 修改密码
-	r.POST("/changePassword", controller.ChangePasswordHandler)
-
-	// 应用JWT认证中间件
-	r.Use(middleware.JWTAuthMiddleware())
+	// 用户模块
+	userGroup := r.Group("/user")
 	{
-		// 查询个人信息
-		r.GET("/user", controller.GetUserInfoHandler)
-		// 修改个人信息
-		r.PUT("/user", controller.UpdateUserInfoHandler)
-		// ai对话
-		r.POST("/ai", controller.AiHandler)
+		// 用户注册
+		userGroup.POST("/signup", controller.SignUpHandler)
+		// 用户登录
+		userGroup.POST("/login", controller.LoginHandler)
+		// 发送邮箱验证码
+		userGroup.POST("/email", controller.VerifyEmailHandler)
+		// 修改密码
+		userGroup.POST("/changePassword", controller.ChangePasswordHandler)
 
-		// 查询首页信息
-		firstPageGroup := r.Group("/firstPage")
+		// jwt校验
+		userGroup.Use(middleware.JWTAuthMiddleware())
 		{
-			firstPageGroup.GET("/news", controller.GetNewsHandler)
-			firstPageGroup.GET("/proverb", controller.GetProverbHandler)
-			firstPageGroup.GET("/crop", controller.GetCropHandler)
-			firstPageGroup.GET("/video", controller.GetVideoHandler)
+			// 查询个人信息
+			r.GET("/user", controller.GetUserInfoHandler)
+			// 修改个人信息
+			r.PUT("/user", controller.UpdateUserInfoHandler)
+			// ai对话
+			r.POST("/ai", controller.AiHandler)
 		}
+	}
+
+	// 首页模块
+	firstPageGroup := r.Group("/firstPage")
+	{
+		firstPageGroup.GET("/news", controller.GetNewsHandler)
+		firstPageGroup.GET("/proverb", controller.GetProverbHandler)
+		firstPageGroup.GET("/crop", controller.GetCropHandler)
+		firstPageGroup.GET("/video", controller.GetVideoHandler)
 	}
 
 	r.NoRoute(func(c *gin.Context) {
