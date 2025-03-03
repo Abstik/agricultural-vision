@@ -19,6 +19,7 @@ type AppConfig struct {
 	*LogConfig   `mapstructure:"log"`
 	*MySQLConfig `mapstructure:"mysql"`
 	*RedisConfig `mapstructure:"redis"`
+	*AiConfig    `mapstructure:"ai"`
 }
 
 type MySQLConfig struct {
@@ -46,6 +47,12 @@ type LogConfig struct {
 	MaxSize    int    `mapstructure:"max_size"`
 	MaxAge     int    `mapstructure:"max_age"`
 	MaxBackups int    `mapstructure:"max_backups"`
+}
+
+type AiConfig struct {
+	SystemContent string `mapstructure:"system_content"`
+	ApiKey        string `mapstructure:"api_key"`
+	ApiUrl        string `mapstructure:"api_url"`
 }
 
 func Init() error {

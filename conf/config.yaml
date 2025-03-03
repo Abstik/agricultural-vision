@@ -13,10 +13,10 @@ log:
   max_backups: 5
 
 mysql:
-  host: "127.0.0.1"
+  host: "101.200.122.3"
   port: 3306
-  user: "root"
-  password: "325523"
+  user: "agricultural_vision"
+  password: "BpdRG8KFY7FFTP28"
   db: "agricultural_vision"
   max_open_conns: 100
   max_idle_conns: 20
@@ -28,3 +28,8 @@ redis:
   db: 0
   pool_size: 100
   min_idle_conns: 50
+
+ai:
+  system_content: "你是一个农业小助手，回答时使用纯文本，不是用markdown语法，语言尽量简练"
+  api_key: "sk-0a03ab3a2d18455e97d0a40f4fc20671"
+  api_url: "https://api.deepseek.com/v1/chat/completions"

@@ -24,17 +24,19 @@ type CropCategory struct {
 
 // 农作物细节
 type CropDetail struct {
-	Id          int64  `json:"-" gorm:"primaryKey"`
-	CategoryId  int64  `json:"-"`                              // 外键
-	Name        string `json:"name" gorm:"type:varchar(625)"`  //名字
-	Description string `json:"description" gorm:"type:text"`   //描述
-	Image       string `json:"image" gorm:"type:varchar(625)"` //图片
+	Id           int64  `json:"-" gorm:"primaryKey"`
+	CategoryId   int64  `json:"-"`                               // 外键
+	Name         string `json:"name" gorm:"type:varchar(625)"`   // 名字
+	Spell        string `json:"spell" gorm:"type:varchar(625)"`  // 拼音
+	Icon         string `json:"icon" gorm:"type:varchar(625)"`   // 卡通图
+	Description  string `json:"description" gorm:"type:text"`    // 描述
+	Introduction string `json:"introduction" gorm:"type:text"`   // 简介
+	Image1       string `json:"image1" gorm:"type:varchar(625)"` // 图片
+	Image2       string `json:"image2" gorm:"type:varchar(625)"` // 图片
 }
 
 // 短视频
 type Video struct {
-	Id      int64  `json:"-" gorm:"primaryKey"`
-	Title   string `json:"title" gorm:"type:varchar(625)"`   //标题
-	Content string `json:"content" gorm:"type:varchar(625)"` //内容
-	Image   string `json:"image" gorm:"type:varchar(625)"`   //图片
+	Id  int64  `json:"-" gorm:"primaryKey"`
+	Url string `json:"url" gorm:"type:varchar(625)"` //视频链接
 }

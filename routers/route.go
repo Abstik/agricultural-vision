@@ -46,13 +46,13 @@ func SetupRouter(mode string) *gin.Engine {
 		userGroup.Use(middleware.JWTAuthMiddleware())
 		{
 			// 查询个人信息
-			r.GET("/user", controller.GetUserInfoHandler)
+			userGroup.GET("/info", controller.GetUserInfoHandler)
 			// 修改个人信息
-			r.PUT("/user", controller.UpdateUserInfoHandler)
-			// ai对话
-			r.POST("/ai", controller.AiHandler)
+			userGroup.PUT("/info", controller.UpdateUserInfoHandler)
 		}
 	}
+
+	r.POST("/ai", middleware.JWTAuthMiddleware(), controller.AiHandler)
 
 	// 首页模块
 	firstPageGroup := r.Group("/firstPage")

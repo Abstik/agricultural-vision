@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"agricultural_vision/settings"
 	"bytes"
 	"encoding/json"
 	"io"
@@ -25,7 +26,7 @@ func AiTalk(aiRequest *models.AiRequest, userID int64) (aiResponse *models.AiRes
 		// 用户没有对话历史，创建一个新的
 		conversation = &models.Conversation{
 			Messages: []models.Message{
-				{Content: "你是一个农业小助手，回答时使用纯文本，不是用markdown语法，语言尽量简练", Role: "system"},
+				{Content: settings.Conf.AiConfig.SystemContent, Role: "system"},
 			},
 		}
 		userConversations[id] = conversation
@@ -38,8 +39,8 @@ func AiTalk(aiRequest *models.AiRequest, userID int64) (aiResponse *models.AiRes
 	conversation.Mutex.Unlock()
 
 	// 向 DeepSeek AI 发送请求
-	apiKey := "sk-0a03ab3a2d18455e97d0a40f4fc20671"
-	apiURL := "https://api.deepseek.com/v1/chat/completions"
+	apiKey := settings.Conf.AiConfig.ApiKey
+	apiURL := settings.Conf.AiConfig.ApiUrl
 
 	// 构建请求体
 	body := map[string]interface{}{
