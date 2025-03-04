@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"agricultural_vision/dao/mysql"
 	"agricultural_vision/pkg/alioss"
 	"errors"
 	"fmt"
@@ -233,6 +234,21 @@ func UpdateUserAvatarHandler(c *gin.Context) {
 		return
 	}
 
-	// 返回文件 URL
-	response.ResponseSuccess(c, fileURL)
+	// 获取用户id
+	userID, err := middleware.GetCurrentUserID(c)
+	if err != nil {
+		zap.L().Error("获取userID失败", zap.Error(err))
+		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		return
+	}
+
+	// 将头像地址更新到数据库
+	err = mysql.DB.Model(&models.User{}).Where("id = ?", userID).Update("avatar", fileURL).Error
+	if err != nil {
+		zap.L().Error("更新头像失败", zap.Error(err))
+		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		return
+	}
+
+	response.ResponseSuccess(c, http.StatusOK)
 }

@@ -2,8 +2,9 @@ package alioss
 
 import (
 	"fmt"
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"mime/multipart"
+
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 
 	"agricultural_vision/settings"
 )
