@@ -41,6 +41,8 @@ func SetupRouter(mode string) *gin.Engine {
 		userGroup.POST("/email", controller.VerifyEmailHandler)
 		// 修改密码
 		userGroup.POST("/changePassword", controller.ChangePasswordHandler)
+		// 修改个人头像
+		userGroup.POST("/avatar", controller.UpdateUserAvatarHandler)
 
 		// jwt校验
 		userGroup.Use(middleware.JWTAuthMiddleware())
@@ -49,6 +51,7 @@ func SetupRouter(mode string) *gin.Engine {
 			userGroup.GET("/info", controller.GetUserInfoHandler)
 			// 修改个人信息
 			userGroup.PUT("/info", controller.UpdateUserInfoHandler)
+
 		}
 	}
 
