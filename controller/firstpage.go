@@ -58,3 +58,15 @@ func GetVideoHandler(c *gin.Context) {
 	response.ResponseSuccess(c, videos)
 	return
 }
+
+func GetPoetryHandler(c *gin.Context) {
+	poetry, err := mysql.GetPoetry()
+	if err != nil {
+		zap.L().Error("获取古诗失败", zap.Error(err))
+		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		return
+	}
+
+	response.ResponseSuccess(c, poetry)
+	return
+}

@@ -29,3 +29,10 @@ func GetVideo() (videos []models.Video, err error) {
 	}
 	return
 }
+
+func GetPoetry() (poetry []models.Poetry, err error) {
+	if err = DB.Model(&models.Poetry{}).Find(&poetry).Error; err != nil {
+		return
+	}
+	return
+}

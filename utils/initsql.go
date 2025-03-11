@@ -13,6 +13,7 @@ func InitSqlTable() (err error) {
 		&models.CropCategory{},
 		&models.CropDetail{},
 		&models.Video{},
+		&models.Poetry{},
 	)
 	return
 }

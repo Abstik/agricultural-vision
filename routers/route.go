@@ -40,7 +40,7 @@ func SetupRouter(mode string) *gin.Engine {
 		// 发送邮箱验证码
 		userGroup.POST("/email", controller.VerifyEmailHandler)
 		// 修改密码
-		userGroup.POST("/changePassword", controller.ChangePasswordHandler)
+		userGroup.POST("/change-password", controller.ChangePasswordHandler)
 
 		// jwt校验
 		userGroup.Use(middleware.JWTAuthMiddleware())
@@ -58,12 +58,13 @@ func SetupRouter(mode string) *gin.Engine {
 	r.POST("/ai", middleware.JWTAuthMiddleware(), controller.AiHandler)
 
 	// 首页模块
-	firstPageGroup := r.Group("/firstPage")
+	firstPageGroup := r.Group("/firstpage")
 	{
 		firstPageGroup.GET("/news", controller.GetNewsHandler)
 		firstPageGroup.GET("/proverb", controller.GetProverbHandler)
 		firstPageGroup.GET("/crop", controller.GetCropHandler)
 		firstPageGroup.GET("/video", controller.GetVideoHandler)
+		firstPageGroup.GET("/poetry", controller.GetPoetryHandler)
 	}
 
 	r.NoRoute(func(c *gin.Context) {
