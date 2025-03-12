@@ -68,26 +68,26 @@ func SetupRouter(mode string) *gin.Engine {
 	}
 
 	// 社区帖子模块
-	postGroup := r.Group("/post")
+	communityPost := r.Group("/community-post", middleware.JWTAuthMiddleware())
 	{
 		//查询所有社区
-		postGroup.GET("/community", controller.CommunityHandler)
+		communityPost.GET("/community", controller.CommunityHandler)
 		//查询社区详情（根据id）
-		postGroup.GET("/community/:id", controller.CommunityDetailHandler)
+		communityPost.GET("/community/:id", controller.CommunityDetailHandler)
 
 		//创建帖子
-		postGroup.POST("/post", controller.CreatePostHandler)
+		communityPost.POST("/post", controller.CreatePostHandler)
 		//查询帖子详情（根据id）
-		postGroup.GET("/post/:id", controller.GetPostDetailHandler)
+		communityPost.GET("/post/:id", controller.GetPostDetailHandler)
 		//查询帖子详情列表(分页)
-		postGroup.GET("/posts", controller.GetPostListHandler)
+		communityPost.GET("/post1", controller.GetPostListHandler)
 		//查询帖子详情列表（分页）（指定排序方式）
-		postGroup.GET("post2", controller.GetPostListHandler2)
+		communityPost.GET("post2", controller.GetPostListHandler2)
 		//查询帖子详情列表（分页）（指定社区）
-		postGroup.GET("post3", controller.GetCommunityPostListHandler)
+		communityPost.GET("post3", controller.GetCommunityPostListHandler)
 
 		//投票
-		postGroup.POST("/vote", controller.PostVoteController)
+		communityPost.POST("/vote", controller.PostVoteController)
 	}
 
 	r.NoRoute(func(c *gin.Context) {
