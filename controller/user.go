@@ -3,6 +3,7 @@ package controller
 import (
 	"agricultural_vision/dao/mysql"
 	"agricultural_vision/pkg/alioss"
+	"agricultural_vision/response"
 	"errors"
 	"fmt"
 	"net/http"
@@ -16,7 +17,6 @@ import (
 	"agricultural_vision/middleware"
 	"agricultural_vision/models"
 	"agricultural_vision/pkg/gomail"
-	"agricultural_vision/response"
 )
 
 // 用户注册

@@ -1,12 +1,12 @@
 package routers
 
 import (
-	"agricultural_vision/controller"
 	"net/http"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
+	"agricultural_vision/controller"
 	"agricultural_vision/logger"
 	"agricultural_vision/middleware"
 )
@@ -14,7 +14,7 @@ import (
 func SetupRouter(mode string) *gin.Engine {
 	// 如果当前代码是运行模式，则将gin设置成发布模式
 	if mode == gin.ReleaseMode {
-		gin.SetMode(gin.ReleaseMode) //gin设置成发布模式
+		gin.SetMode(gin.ReleaseMode) // gin设置成发布模式
 	}
 
 	r := gin.New()
@@ -65,6 +65,29 @@ func SetupRouter(mode string) *gin.Engine {
 		firstPageGroup.GET("/crop", controller.GetCropHandler)
 		firstPageGroup.GET("/video", controller.GetVideoHandler)
 		firstPageGroup.GET("/poetry", controller.GetPoetryHandler)
+	}
+
+	// 社区帖子模块
+	postGroup := r.Group("/post")
+	{
+		//查询所有社区
+		postGroup.GET("/community", controller.CommunityHandler)
+		//查询社区详情（根据id）
+		postGroup.GET("/community/:id", controller.CommunityDetailHandler)
+
+		//创建帖子
+		postGroup.POST("/post", controller.CreatePostHandler)
+		//查询帖子详情（根据id）
+		postGroup.GET("/post/:id", controller.GetPostDetailHandler)
+		//查询帖子详情列表(分页)
+		postGroup.GET("/posts", controller.GetPostListHandler)
+		//查询帖子详情列表（分页）（指定排序方式）
+		postGroup.GET("post2", controller.GetPostListHandler2)
+		//查询帖子详情列表（分页）（指定社区）
+		postGroup.GET("post3", controller.GetCommunityPostListHandler)
+
+		//投票
+		postGroup.POST("/vote", controller.PostVoteController)
 	}
 
 	r.NoRoute(func(c *gin.Context) {

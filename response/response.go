@@ -24,7 +24,7 @@ func ResponseSuccess(c *gin.Context, data interface{}) {
 	})
 }
 
-func ResponseError(c *gin.Context, httpStatus int, msg string) {
+func ResponseError(c *gin.Context, httpStatus int, msg interface{}) {
 	c.JSON(httpStatus, &ResponseData{
 		Code: 0,
 		Msg:  msg,

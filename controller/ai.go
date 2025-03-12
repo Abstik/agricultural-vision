@@ -2,6 +2,7 @@ package controller
 
 import (
 	"agricultural_vision/middleware"
+	"agricultural_vision/response"
 	"go.uber.org/zap"
 	"net/http"
 
@@ -9,7 +10,6 @@ import (
 
 	"agricultural_vision/logic"
 	"agricultural_vision/models"
-	"agricultural_vision/response"
 )
 
 func AiHandler(c *gin.Context) {

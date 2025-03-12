@@ -10,7 +10,6 @@ import (
 
 var (
 	client *redis.Client
-	Nil    = redis.Nil
 )
 
 type SliceCmd = redis.SliceCmd

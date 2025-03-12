@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"agricultural_vision/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -8,7 +9,6 @@ import (
 
 	"agricultural_vision/dao/mysql"
 	"agricultural_vision/models"
-	"agricultural_vision/response"
 )
 
 func GetNewsHandler(c *gin.Context) {

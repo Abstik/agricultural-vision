@@ -15,4 +15,6 @@ const (
 	CodeInvalidAToken    string = "无效的token"
 	CodeAiNotAnswer      string = "AI未回答"
 	CodeServerBusy       string = "服务繁忙"
+	CodeNoResult         string = "未查询到结果"
+	CodeInvalidID        string = "无效的id"
 )

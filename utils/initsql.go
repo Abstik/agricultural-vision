@@ -14,6 +14,8 @@ func InitSqlTable() (err error) {
 		&models.CropDetail{},
 		&models.Video{},
 		&models.Poetry{},
+		&models.Post{},
+		&models.Community{},
 	)
 	return
 }
