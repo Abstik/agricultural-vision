@@ -2,6 +2,7 @@ package controller
 
 import (
 	"agricultural_vision/dao/mysql"
+	"agricultural_vision/models/entity"
 	"agricultural_vision/pkg/alioss"
 	"agricultural_vision/response"
 	"errors"
@@ -22,12 +23,12 @@ import (
 // 用户注册
 func SignUpHandler(c *gin.Context) {
 	//1.获取参数和参数绑定
-	var p models.SignUpParam
+	var p response.SignUpDTO
 	err := c.ShouldBindJSON(&p)
 	if err != nil {
 		//请求参数有误，直接返回响应
 		zap.L().Error("参数校验失败", zap.Error(err))
-		response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidParam)
+		response.ResponseError(c, http.StatusBadRequest, response.CodeInvalidParam)
 		return
 	}
 
@@ -37,17 +38,17 @@ func SignUpHandler(c *gin.Context) {
 	if err != nil {
 		zap.L().Error("注册失败", zap.Error(err))
 		//如果是邮箱已存在的错误
-		if errors.Is(err, models.ErrorEmailExist) {
-			response.ResponseError(c, http.StatusBadRequest, models.CodeEmailExist)
+		if errors.Is(err, response.ErrorEmailExist) {
+			response.ResponseError(c, http.StatusBadRequest, response.CodeEmailExist)
 			return
 		}
 		//如果是邮箱验证码错误
-		if errors.Is(err, models.ErrorInvalidEmailCode) {
-			response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidEmailCode)
+		if errors.Is(err, response.ErrorInvalidEmailCode) {
+			response.ResponseError(c, http.StatusBadRequest, response.CodeInvalidEmailCode)
 			return
 		}
 		//如果是其他错误，返回服务端繁忙错误信息
-		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		response.ResponseError(c, http.StatusInternalServerError, response.CodeServerBusy)
 		return
 	}
 
@@ -59,11 +60,11 @@ func SignUpHandler(c *gin.Context) {
 // 用户登录
 func LoginHandler(c *gin.Context) {
 	//1.获取请求参数以及参数校验
-	p := new(models.LoginParam)
+	p := new(response.LoginDTO)
 	if err := c.ShouldBindJSON(p); err != nil {
 		//请求参数有误，直接返回响应
 		zap.L().Error("参数校验失败", zap.Error(err))
-		response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidParam)
+		response.ResponseError(c, http.StatusBadRequest, response.CodeInvalidParam)
 		return
 	}
 
@@ -71,14 +72,14 @@ func LoginHandler(c *gin.Context) {
 	token, err := logic.Login(p)
 	if err != nil {
 		zap.L().Error("登录失败", zap.String("name", p.Email), zap.Error(err))
-		if errors.Is(err, models.ErrorEmailNotExist) { //如果是邮箱未注册错误
-			response.ResponseError(c, http.StatusBadRequest, models.CodeEmailNotExist)
+		if errors.Is(err, response.ErrorEmailNotExist) { //如果是邮箱未注册错误
+			response.ResponseError(c, http.StatusBadRequest, response.CodeEmailNotExist)
 			return
-		} else if errors.Is(err, models.ErrorInvalidPassword) { //如果是密码不正确错误
-			response.ResponseError(c, http.StatusUnauthorized, models.CodeInvalidPassword)
+		} else if errors.Is(err, response.ErrorInvalidPassword) { //如果是密码不正确错误
+			response.ResponseError(c, http.StatusUnauthorized, response.CodeInvalidPassword)
 			return
 		} else { //否则返回服务端繁忙错误
-			response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+			response.ResponseError(c, http.StatusInternalServerError, response.CodeServerBusy)
 			return
 		}
 	}
@@ -91,17 +92,17 @@ func LoginHandler(c *gin.Context) {
 // 发送邮箱验证码
 func VerifyEmailHandler(c *gin.Context) {
 	// 参数绑定
-	sendVerificationCodeParam := new(models.SendVerificationCodeParam)
+	sendVerificationCodeParam := new(response.SendVerificationCodeDTO)
 	if err := c.ShouldBindJSON(&sendVerificationCodeParam); err != nil {
 		zap.L().Error("参数校验失败", zap.Error(err))
-		response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidParam)
+		response.ResponseError(c, http.StatusBadRequest, response.CodeInvalidParam)
 		return
 	}
 
 	// 发送邮箱验证码校验邮箱
 	if err := gomail.SendVerificationCode(sendVerificationCodeParam.Email); err != nil {
 		zap.L().Error("发送邮箱验证码失败", zap.Error(err))
-		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		response.ResponseError(c, http.StatusInternalServerError, response.CodeServerBusy)
 		return
 	}
 
@@ -112,11 +113,11 @@ func VerifyEmailHandler(c *gin.Context) {
 // 修改密码
 func ChangePasswordHandler(c *gin.Context) {
 	// 1.获取请求参数以及参数校验
-	p := new(models.ChangePasswordParam)
+	p := new(response.ChangePasswordDTO)
 	if err := c.ShouldBindJSON(p); err != nil {
 		// 请求参数有误，直接返回响应
 		zap.L().Error("参数校验失败", zap.Error(err))
-		response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidParam)
+		response.ResponseError(c, http.StatusBadRequest, response.CodeInvalidParam)
 		return
 	}
 
@@ -125,16 +126,16 @@ func ChangePasswordHandler(c *gin.Context) {
 	if err != nil {
 		zap.L().Error("修改密码失败", zap.Error(err))
 		// 如果是邮箱验证码错误
-		if errors.Is(err, models.ErrorInvalidEmailCode) {
-			response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidEmailCode)
+		if errors.Is(err, response.ErrorInvalidEmailCode) {
+			response.ResponseError(c, http.StatusBadRequest, response.CodeInvalidEmailCode)
 			return
 		}
 		// 如果是邮箱未注册错误
-		if errors.Is(err, models.ErrorEmailNotExist) {
-			response.ResponseError(c, http.StatusBadRequest, models.CodeEmailNotExist)
+		if errors.Is(err, response.ErrorEmailNotExist) {
+			response.ResponseError(c, http.StatusBadRequest, response.CodeEmailNotExist)
 			return
 		}
-		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		response.ResponseError(c, http.StatusInternalServerError, response.CodeServerBusy)
 		return
 	}
 	response.ResponseSuccess(c, nil)
@@ -147,7 +148,7 @@ func GetUserInfoHandler(c *gin.Context) {
 	userID, err := middleware.GetCurrentUserID(c)
 	if err != nil {
 		zap.L().Error("获取userID失败", zap.Error(err))
-		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		response.ResponseError(c, http.StatusInternalServerError, response.CodeServerBusy)
 		return
 	}
 
@@ -155,7 +156,7 @@ func GetUserInfoHandler(c *gin.Context) {
 	data, err := logic.GetUserInfo(userID)
 	if err != nil {
 		zap.L().Error("查询个人信息失败", zap.Error(err))
-		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		response.ResponseError(c, http.StatusInternalServerError, response.CodeServerBusy)
 		return
 	}
 	response.ResponseSuccess(c, data)
@@ -165,11 +166,11 @@ func GetUserInfoHandler(c *gin.Context) {
 // 修改个人信息
 func UpdateUserInfoHandler(c *gin.Context) {
 	// 1.获取请求参数以及参数校验
-	p := new(models.UpdateUserInfoParam)
+	p := new(response.UpdateUserInfoDTO)
 	if err := c.ShouldBindJSON(p); err != nil {
 		// 请求参数有误，直接返回响应
 		zap.L().Error("参数校验失败", zap.Error(err))
-		response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidParam)
+		response.ResponseError(c, http.StatusBadRequest, response.CodeInvalidParam)
 		return
 	}
 
@@ -177,7 +178,7 @@ func UpdateUserInfoHandler(c *gin.Context) {
 	userID, err := middleware.GetCurrentUserID(c)
 	if err != nil {
 		zap.L().Error("获取userID失败", zap.Error(err))
-		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		response.ResponseError(c, http.StatusInternalServerError, response.CodeServerBusy)
 		return
 	}
 
@@ -185,11 +186,11 @@ func UpdateUserInfoHandler(c *gin.Context) {
 	if err != nil {
 		zap.L().Error("修改个人信息失败", zap.Error(err))
 		// 如果邮箱已注册错误
-		if errors.Is(err, models.ErrorEmailExist) {
-			response.ResponseError(c, http.StatusBadRequest, models.CodeEmailExist)
+		if errors.Is(err, response.ErrorEmailExist) {
+			response.ResponseError(c, http.StatusBadRequest, response.CodeEmailExist)
 			return
 		}
-		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		response.ResponseError(c, http.StatusInternalServerError, response.CodeServerBusy)
 		return
 	}
 
@@ -203,7 +204,7 @@ func UpdateUserAvatarHandler(c *gin.Context) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		zap.L().Error("获取上传文件失败", zap.Error(err))
-		response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidParam)
+		response.ResponseError(c, http.StatusBadRequest, response.CodeInvalidParam)
 		return
 	}
 	defer file.Close()
@@ -230,7 +231,7 @@ func UpdateUserAvatarHandler(c *gin.Context) {
 	fileURL, err := alioss.UploadFile(file, newFileName)
 	if err != nil {
 		zap.L().Error("上传文件失败", zap.Error(err))
-		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		response.ResponseError(c, http.StatusInternalServerError, response.CodeServerBusy)
 		return
 	}
 
@@ -238,15 +239,15 @@ func UpdateUserAvatarHandler(c *gin.Context) {
 	userID, err := middleware.GetCurrentUserID(c)
 	if err != nil {
 		zap.L().Error("获取userID失败", zap.Error(err))
-		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		response.ResponseError(c, http.StatusInternalServerError, response.CodeServerBusy)
 		return
 	}
 
 	// 将头像地址更新到数据库
-	err = mysql.DB.Model(&models.User{}).Where("id = ?", userID).Update("avatar", fileURL).Error
+	err = mysql.DB.Model(&entity.User{}).Where("id = ?", userID).Update("avatar", fileURL).Error
 	if err != nil {
 		zap.L().Error("更新头像失败", zap.Error(err))
-		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		response.ResponseError(c, http.StatusInternalServerError, response.CodeServerBusy)
 		return
 	}
 

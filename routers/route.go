@@ -55,7 +55,11 @@ func SetupRouter(mode string) *gin.Engine {
 		}
 	}
 
-	r.POST("/ai", middleware.JWTAuthMiddleware(), controller.AiHandler)
+	// AI模块
+	AIGroup := r.Group("/ai")
+	{
+		AIGroup.POST("/ai", middleware.JWTAuthMiddleware(), controller.AiHandler)
+	}
 
 	// 首页模块
 	firstPageGroup := r.Group("/firstpage")
@@ -70,14 +74,29 @@ func SetupRouter(mode string) *gin.Engine {
 	// 社区帖子模块
 	communityPost := r.Group("/community-post", middleware.JWTAuthMiddleware())
 	{
-		//查询所有社区
+		// 查询社区列表
 		communityPost.GET("/community", controller.CommunityHandler)
-		//查询社区详情（根据id）
+		// 查询社区详情
 		communityPost.GET("/community/:id", controller.CommunityDetailHandler)
 
-		//创建帖子
+		// 创建帖子
 		communityPost.POST("/post", controller.CreatePostHandler)
-		//查询帖子详情（根据id）
+		// 删除帖子
+		communityPost.DELETE("/post/:id", controller.DeletePostHandler)
+		// 查询帖子列表（指定排序方式）
+		communityPost.GET("/posts", controller.GetPostListHandler)
+		// 查询帖子列表（指定社区）
+		communityPost.GET("/community/:id/posts", controller.GetCommunityPostListHandler)
+		// 查询帖子详情
+		communityPost.GET("/post/:id", controller.GetPostDetailHandler)
+		// 帖子投票
+		communityPost.POST("/post/vote", controller.PostVoteController)
+		// 发布评论
+		communityPost.POST("/comment", controller.CreateCommentHandler)
+		// 评论投票
+		communityPost.POST("/comment/vote", controller.CommentVoteController)
+
+		// 查询帖子详情（根据id）
 		communityPost.GET("/post/:id", controller.GetPostDetailHandler)
 		//查询帖子详情列表(分页)
 		communityPost.GET("/post1", controller.GetPostListHandler)

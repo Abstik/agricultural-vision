@@ -1,6 +1,7 @@
 package logic
 
 import (
+	response2 "agricultural_vision/models/response"
 	"agricultural_vision/settings"
 	"bytes"
 	"encoding/json"
@@ -12,11 +13,11 @@ import (
 	"agricultural_vision/models"
 )
 
-var userConversations = make(map[string]*models.Conversation) // 使用 map 保存每个用户的对话历史
-var mutex = sync.Mutex{}                                      // 保护 map 的并发访问
+var userConversations = make(map[string]*response.Conversation) // 使用 map 保存每个用户的对话历史
+var mutex = sync.Mutex{}                                        // 保护 map 的并发访问
 
-func AiTalk(aiRequest *models.AiRequest, userID int64) (aiResponse *models.AiResponse, err error) {
-	aiResponse = new(models.AiResponse)
+func AiTalk(aiRequest *response.AiRequest, userID int64) (aiResponse *response.AiResponse, err error) {
+	aiResponse = new(response.AiResponse)
 	id := strconv.FormatInt(userID, 10)
 
 	// 获取或创建该用户的对话历史
@@ -24,8 +25,8 @@ func AiTalk(aiRequest *models.AiRequest, userID int64) (aiResponse *models.AiRes
 	conversation, exists := userConversations[id]
 	if !exists {
 		// 用户没有对话历史，创建一个新的
-		conversation = &models.Conversation{
-			Messages: []models.Message{
+		conversation = &response.Conversation{
+			Messages: []response.Message{
 				{Content: settings.Conf.AiConfig.SystemContent, Role: "system"},
 			},
 		}
@@ -35,7 +36,7 @@ func AiTalk(aiRequest *models.AiRequest, userID int64) (aiResponse *models.AiRes
 
 	// 将用户输入添加到对话历史中
 	conversation.Mutex.Lock()
-	conversation.Messages = append(conversation.Messages, models.Message{Content: aiRequest.UserInput, Role: "user"})
+	conversation.Messages = append(conversation.Messages, response.Message{Content: aiRequest.UserInput, Role: "user"})
 	conversation.Mutex.Unlock()
 
 	// 向 DeepSeek AI 发送请求
@@ -81,7 +82,7 @@ func AiTalk(aiRequest *models.AiRequest, userID int64) (aiResponse *models.AiRes
 	}
 
 	// 解析 AI 响应
-	var apiResponse models.ApiResponse
+	var apiResponse response.ApiResponse
 	err = json.Unmarshal(bodyBytes, &apiResponse)
 	if err != nil {
 		return
@@ -93,13 +94,13 @@ func AiTalk(aiRequest *models.AiRequest, userID int64) (aiResponse *models.AiRes
 
 		// 将 AI 的回答添加到对话历史中
 		conversation.Mutex.Lock()
-		conversation.Messages = append(conversation.Messages, models.Message{Content: aiAnswer, Role: "assistant"})
+		conversation.Messages = append(conversation.Messages, response.Message{Content: aiAnswer, Role: "assistant"})
 		conversation.Mutex.Unlock()
 
 		// 返回 AI 的回答给前端
 		aiResponse.Answer = aiAnswer
 		return
 	} else {
-		return nil, models.ErrorAiNotAnswer
+		return nil, response2.ErrorAiNotAnswer
 	}
 }

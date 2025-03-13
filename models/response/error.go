@@ -1,6 +1,8 @@
-package models
+package response
 
-import "errors"
+import (
+	"errors"
+)
 
 // 封装常见的错误信息，向上层进行返回。这里的错误是业务逻辑错误
 // 在controller层中对错误信息进行判断，向前端返回最终错误信息

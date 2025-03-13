@@ -1,8 +1,13 @@
-package models
+package response
 
 //封装自定义的状态码和信息
 
 type ResCode int64
+
+const (
+	OrderTime  = "time"
+	OrderScore = "score"
+)
 
 const (
 	CodeSuccess          string = "success"

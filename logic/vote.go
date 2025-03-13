@@ -10,7 +10,7 @@ import (
 )
 
 // 给帖子投票
-func VoteForPost(userID int64, p *models.VoteData) error {
+func VoteForPost(userID int64, p *response.VoteData) error {
 	zap.L().Debug("VoteForPost",
 		zap.Int64("userID", userID),
 		zap.String("postID", p.PostID),

@@ -1,15 +1,14 @@
 package mysql
 
 import (
+	"agricultural_vision/models/entity"
 	"errors"
 	"fmt"
 	"strings"
-
-	"agricultural_vision/models"
 )
 
 // 创建帖子
-func CreatePost(p *models.Post) error {
+func CreatePost(p *entity.Post) error {
 	result := DB.Create(p)
 	// 在执行 SQL 语句或与数据库交互过程中是否发生了错误
 	if result.Error != nil {
@@ -23,15 +22,15 @@ func CreatePost(p *models.Post) error {
 }
 
 // 根据帖子id查询帖子详情
-func GetPostById(pid int64) (*models.Post, error) {
-	var post *models.Post
+func GetPostById(pid int64) (*entity.Post, error) {
+	var post *entity.Post
 	result := DB.Where("post_id = ?", pid).First(&post)
 	return post, result.Error
 }
 
 // 查询帖子列表
-func GetPostList(pageNum, pageSize int64) ([]*models.Post, error) {
-	var posts []*models.Post
+func GetPostList(pageNum, pageSize int64) ([]*entity.Post, error) {
+	var posts []*entity.Post
 
 	result := DB.
 		Order("created_time DESC").
@@ -43,8 +42,8 @@ func GetPostList(pageNum, pageSize int64) ([]*models.Post, error) {
 }
 
 // 根据给定的id列表查询帖子数据
-func GetPostListByIDs(ids []string) ([]*models.Post, error) {
-	var posts []*models.Post
+func GetPostListByIDs(ids []string) ([]*entity.Post, error) {
+	var posts []*entity.Post
 
 	if len(ids) == 0 {
 		return posts, nil

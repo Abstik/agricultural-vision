@@ -1,6 +1,7 @@
 package redis
 
 import (
+	response2 "agricultural_vision/models/response"
 	"strconv"
 	"time"
 
@@ -20,11 +21,11 @@ func getIDsFormKey(key string, page, size int64) ([]string, error) {
 }
 
 // 根据排序方式和索引范围，查询id列表
-func GetPostIDsInOrder(p *models.PostListParam) ([]string, error) {
+func GetPostIDsInOrder(p *response.PostListParam) ([]string, error) {
 	//从redis中获取id
 	//1.根据用户请求中携带的order参数（排序方式）确定要查询的redis key
 	key := getRedisKey(KeyPostTimeZSet)
-	if p.Order == models.OrderScore {
+	if p.Order == response2.OrderScore {
 		key = getRedisKey(KeyPostScoreZSet)
 	}
 
@@ -69,11 +70,11 @@ func GetPostVoteDataByID(id string) int64 {
 }
 
 // 根据社区id查询该社区下的id列表
-func GetCommunityPostIDsInOrder(p *models.CommunityPostListParam) (ids []string, err error) {
+func GetCommunityPostIDsInOrder(p *response.CommunityPostListParam) (ids []string, err error) {
 	//根据指定的排序方式，确定要操作的redis中的key
 	//orderKey指定排序方式的键名，按时间排序则是KeyPostTimeZSet，按分数排序则是KeyPostScoreZSet
 	orderKey := getRedisKey(KeyPostTimeZSet)
-	if p.Order == models.OrderScore {
+	if p.Order == response2.OrderScore {
 		orderKey = getRedisKey(KeyPostScoreZSet)
 	}
 

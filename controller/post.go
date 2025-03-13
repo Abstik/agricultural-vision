@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"agricultural_vision/models/entity"
+	response2 "agricultural_vision/models/response"
 	"net/http"
 	"strconv"
 
@@ -16,17 +18,17 @@ import (
 // 创建帖子
 func CreatePostHandler(c *gin.Context) {
 	//1.获取参数及参数的校验
-	p := new(models.Post)
+	p := new(entity.Post)
 	//将参数绑定到p中
 	if err := c.ShouldBindJSON(p); err != nil {
 		zap.L().Error("请求参数错误", zap.Error(err))
-		response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidParam)
+		response.ResponseError(c, http.StatusBadRequest, response2.CodeInvalidParam)
 		return
 	}
 	//在请求上下文中获取userID
 	userID, err := middleware.GetCurrentUserID(c)
 	if err != nil {
-		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		response.ResponseError(c, http.StatusInternalServerError, response2.CodeServerBusy)
 		return
 	}
 	p.AuthorID = userID
@@ -34,12 +36,12 @@ func CreatePostHandler(c *gin.Context) {
 	//2.创建帖子
 	if err := logic.CreatePost(p); err != nil {
 		zap.L().Error("创建帖子失败", zap.Error(err))
-		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		response.ResponseError(c, http.StatusInternalServerError, response2.CodeServerBusy)
 		return
 	}
 
 	//3.返回响应
-	response.ResponseSuccess(c, models.CodeSuccess)
+	response.ResponseSuccess(c, response2.CodeSuccess)
 }
 
 // 查询帖子详情
@@ -49,7 +51,7 @@ func GetPostDetailHandler(c *gin.Context) {
 	pid, err := strconv.ParseInt(pidStr, 10, 64)
 	if err != nil {
 		zap.L().Error("获取帖子详情的参数不正确", zap.Error(err))
-		response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidParam)
+		response.ResponseError(c, http.StatusBadRequest, response2.CodeInvalidParam)
 		return
 	}
 
@@ -57,7 +59,7 @@ func GetPostDetailHandler(c *gin.Context) {
 	data, err := logic.GetPostById(pid)
 	if err != nil {
 		zap.L().Error("获取帖子详情失败", zap.Error(err))
-		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		response.ResponseError(c, http.StatusInternalServerError, response2.CodeServerBusy)
 		return
 	}
 
@@ -91,7 +93,7 @@ func GetPostListHandler(c *gin.Context) {
 	data, err := logic.GetPostList(pageNum, pageSize)
 	if err != nil {
 		zap.L().Error("获取帖子列表失败", zap.Error(err))
-		response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidParam)
+		response.ResponseError(c, http.StatusBadRequest, response2.CodeInvalidParam)
 		return
 	}
 	response.ResponseSuccess(c, data)
@@ -104,15 +106,15 @@ func GetPostListHandler(c *gin.Context) {
 // 3.根据id去数据库查询帖子详细信息
 func GetPostListHandler2(c *gin.Context) {
 	//初始化结构体时指定初始默认参数
-	p := &models.PostListParam{
+	p := &response.PostListParam{
 		Page:  1,
 		Size:  10,
-		Order: models.OrderTime,
+		Order: response2.OrderTime,
 	}
 	err := c.ShouldBindQuery(p)
 	if err != nil {
 		zap.L().Error("请求参数错误", zap.Error(err))
-		response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidParam)
+		response.ResponseError(c, http.StatusBadRequest, response2.CodeInvalidParam)
 		return
 	}
 
@@ -120,7 +122,7 @@ func GetPostListHandler2(c *gin.Context) {
 	data, err := logic.GetPostList2(p)
 	if err != nil {
 		zap.L().Error("指定顺序查询帖子列表失败", zap.Error(err))
-		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		response.ResponseError(c, http.StatusInternalServerError, response2.CodeServerBusy)
 		return
 	}
 	response.ResponseSuccess(c, data)
@@ -130,17 +132,17 @@ func GetPostListHandler2(c *gin.Context) {
 // 根据社区查询该社区分类下的帖子详情列表
 func GetCommunityPostListHandler(c *gin.Context) {
 	//初始化结构体时指定初始默认参数
-	p := &models.CommunityPostListParam{
-		PostListParam: models.PostListParam{
+	p := &response.CommunityPostListParam{
+		PostListParam: response.PostListParam{
 			Page:  1,
 			Size:  10,
-			Order: models.OrderTime,
+			Order: response2.OrderTime,
 		},
 	}
 	err := c.ShouldBindQuery(p)
 	if err != nil {
 		zap.L().Error("请求参数错误", zap.Error(err))
-		response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidParam)
+		response.ResponseError(c, http.StatusBadRequest, response2.CodeInvalidParam)
 		return
 	}
 
@@ -148,7 +150,7 @@ func GetCommunityPostListHandler(c *gin.Context) {
 	data, err := logic.GetCommunityPostList(p)
 	if err != nil {
 		zap.L().Error("根据社区查询帖子列表失败", zap.Error(err))
-		response.ResponseError(c, http.StatusInternalServerError, models.CodeServerBusy)
+		response.ResponseError(c, http.StatusInternalServerError, response2.CodeServerBusy)
 		return
 	}
 	response.ResponseSuccess(c, data)

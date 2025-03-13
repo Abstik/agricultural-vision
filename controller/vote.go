@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"agricultural_vision/response"
+	response2 "agricultural_vision/models/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,17 +11,19 @@ import (
 	"agricultural_vision/logic"
 	"agricultural_vision/middleware"
 	"agricultural_vision/models"
+	"agricultural_vision/models/request"
+	"agricultural_vision/response"
 )
 
 // 投票功能
 func PostVoteController(c *gin.Context) {
-	p := new(models.VoteData)
+	p := new(request.VoteDTO)
 	//参数校验
 	err := c.ShouldBindJSON(p)
 	if err != nil {
 		errs, ok := err.(validator.ValidationErrors)
 		if !ok {
-			response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidParam)
+			response.ResponseError(c, http.StatusBadRequest, response2.CodeInvalidParam)
 			return
 		} else {
 			errData := RemoveTopStruct(errs.Translate(trans)) //翻译错误
@@ -33,13 +35,13 @@ func PostVoteController(c *gin.Context) {
 	//业务逻辑
 	userID, err := middleware.GetCurrentUserID(c)
 	if err != nil {
-		response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidParam)
+		response.ResponseError(c, http.StatusBadRequest, response2.CodeInvalidParam)
 		return
 	}
 	err = logic.VoteForPost(userID, p)
 	if err != nil {
 		zap.L().Error("投票失败", zap.Error(err))
-		response.ResponseError(c, http.StatusBadRequest, models.CodeInvalidParam)
+		response.ResponseError(c, http.StatusBadRequest, response2.CodeInvalidParam)
 		return
 	}
 

@@ -2,15 +2,16 @@ package mysql
 
 import (
 	"agricultural_vision/models"
+	"agricultural_vision/models/entity"
 )
 
 // 查询社区列表
-func GetCommunityList() ([]*models.CommunityResponse, error) {
-	var communities []*models.CommunityResponse
+func GetCommunityList() ([]*response.CommunityResponse, error) {
+	var communities []*response.CommunityResponse
 
-	result := DB.Model(&models.Community{}).
-		Select("community_id, community_name").
-		Order("created_at DESC").
+	result := DB.Model(&response.CommunityResponse{}).
+		Select("community_id", "community_name").
+		Order("created_at DESC"). // 根据创建时间倒序排序
 		Find(&communities)
 
 	/*// 如果未查询到结果
@@ -23,20 +24,15 @@ func GetCommunityList() ([]*models.CommunityResponse, error) {
 }
 
 // 根据ID获取社区详情
-func GetCommunityDetailById(id int64) (*models.CommunityDetailResponse, error) {
-	var communityDetail models.CommunityDetailResponse
+func GetCommunityDetailById(id int64) (*entity.Community, error) {
+	var community entity.Community
 
-	result := DB.Select(
-		"community_id",
-		"community_name",
-		"introduction",
-		"created_at",
-	).Where("community_id = ?", id).First(&communityDetail)
+	result := DB.Where("community_id = ?", id).First(&community)
 
 	/*// 如果未查询到结果
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, models.ErrorNoResult
 	}*/
 
-	return &communityDetail, result.Error
+	return &community, result.Error
 }

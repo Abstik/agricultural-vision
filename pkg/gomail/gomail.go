@@ -1,14 +1,13 @@
 package gomail
 
 import (
+	"agricultural_vision/models/response"
 	"fmt"
 	"math/rand"
 	"time"
 
 	"github.com/patrickmn/go-cache"
 	"gopkg.in/gomail.v2"
-
-	"agricultural_vision/models"
 )
 
 var (
@@ -83,12 +82,12 @@ func VerifyVerificationCode(email string, code string) error {
 
 	// 如果找不到验证码或验证码已过期
 	if !found {
-		return models.ErrorInvalidEmailCode
+		return response.ErrorInvalidEmailCode
 	}
 
 	// 如果验证码不匹配
 	if cachedCode != code {
-		return models.ErrorInvalidEmailCode
+		return response.ErrorInvalidEmailCode
 	}
 
 	return nil

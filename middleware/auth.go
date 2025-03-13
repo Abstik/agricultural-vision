@@ -21,7 +21,7 @@ func JWTAuthMiddleware() func(c *gin.Context) {
 		authHeader := c.Request.Header.Get("Authorization")
 		//如果未携带令牌，代表没有登录
 		if authHeader == "" {
-			response.ResponseError(c, http.StatusUnauthorized, models.CodeNeedLogin)
+			response.ResponseError(c, http.StatusUnauthorized, response.CodeNeedLogin)
 			c.Abort()
 			return
 		}
@@ -29,7 +29,7 @@ func JWTAuthMiddleware() func(c *gin.Context) {
 		// 按空格分割
 		parts := strings.SplitN(authHeader, " ", 2)
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			response.ResponseError(c, http.StatusUnauthorized, models.CodeInvalidAToken)
+			response.ResponseError(c, http.StatusUnauthorized, response.CodeInvalidAToken)
 			c.Abort()
 			return
 		}
@@ -37,7 +37,7 @@ func JWTAuthMiddleware() func(c *gin.Context) {
 		// parts[1]是获取到的tokenString，我们使用之前定义好的解析JWT的函数来解析它
 		mc, err := jwt.ParseToken(parts[1])
 		if err != nil {
-			response.ResponseError(c, http.StatusUnauthorized, models.CodeInvalidAToken)
+			response.ResponseError(c, http.StatusUnauthorized, response.CodeInvalidAToken)
 			c.Abort()
 			return
 		}

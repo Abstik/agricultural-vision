@@ -1,4 +1,4 @@
-package models
+package entity
 
 // 新闻
 type News struct {
