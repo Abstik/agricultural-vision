@@ -1,4 +1,4 @@
-package response
+package constants
 
 import (
 	"errors"
@@ -14,4 +14,5 @@ var (
 	ErrorAiNotAnswer      = errors.New(CodeAiNotAnswer)
 	ErrorNoResult         = errors.New(CodeNoResult)
 	ErrorInvalidID        = errors.New(CodeInvalidID)
+	ErrorVoteTimeExpire   = errors.New(CodeVoteTimeExpire)
 )

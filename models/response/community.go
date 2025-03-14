@@ -8,8 +8,8 @@ type CommunityBriefResponse struct {
 
 // 社区详情
 type CommunityResponse struct {
-	ID            int64               `json:"id"`
-	CommunityName string              `json:"community_name"`
-	Introduction  string              `json:"introduction"`
-	Posts         []PostBriefResponse `json:"posts"`
+	ID            int64          `json:"id"`
+	CommunityName string         `json:"community_name"`
+	Introduction  string         `json:"introduction"`
+	Posts         []PostResponse `json:"posts"`
 }

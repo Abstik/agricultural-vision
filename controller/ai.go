@@ -1,38 +1,38 @@
 package controller
 
 import (
-	"agricultural_vision/middleware"
-	"agricultural_vision/response"
-	"go.uber.org/zap"
+	"agricultural_vision/constants"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 
 	"agricultural_vision/logic"
-	"agricultural_vision/models"
+	"agricultural_vision/middleware"
+	"agricultural_vision/models/request"
 )
 
 func AiHandler(c *gin.Context) {
 	userID, err := middleware.GetCurrentUserID(c)
 	if err != nil {
 		zap.L().Error("获取userID失败", zap.Error(err))
-		response.ResponseError(c, http.StatusInternalServerError, response.CodeServerBusy)
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
 		return
 	}
 
 	// 解析前端传来的请求体
-	var aiRequest response.AiRequest
+	var aiRequest request.AiRequest
 	if err := c.ShouldBindJSON(&aiRequest); err != nil {
 		zap.L().Error("参数校验失败", zap.Error(err))
-		response.ResponseError(c, http.StatusBadRequest, response.CodeInvalidParam)
+		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
 	}
 
 	// 调用逻辑层
 	aiResponse, err := logic.AiTalk(&aiRequest, userID)
 	if err != nil {
 		zap.L().Error("AI对话失败", zap.Error(err))
-		response.ResponseError(c, http.StatusInternalServerError, response.CodeServerBusy)
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
 	} else {
-		response.ResponseSuccess(c, aiResponse)
+		ResponseSuccess(c, aiResponse)
 	}
 }

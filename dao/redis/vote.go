@@ -1,11 +1,11 @@
 package redis
 
 import (
-	"errors"
-	"strconv"
 	"time"
 
 	"github.com/go-redis/redis"
+
+	"agricultural_vision/constants"
 )
 
 /*
@@ -27,27 +27,20 @@ direction=0时：
 	2、到期之后删除 KeyPostVotedZSetPF
 */
 
-const (
-	oneWeekInSeconds = 3600 * 24 * 7 //一周的秒数
-	scorePerVote     = 432           //每一票的票数
-)
-
-var (
-	ErrVoteTimeExpire = errors.New("投票时间已结束")
-)
-
 // 为帖子投票
 func VoteForPost(userID, postID string, value float64) error {
+	// 投票的权重，如果帖子发布时间超过一周，则权重为0.5（减半）
+	weight := 1.0
+
 	//1.判断投票限制
 	//利用redis获取帖子发布时间
 	//ZScore函数的两个参数：键名和成员名，获取该成员的分数score
 	//Val将结果转换为float64类型
 	postTime := client.ZScore(getRedisKey(KeyPostTimeZSet), postID).Val()
 
-	//利用redis获取帖子发布时间
-	//如果帖子发布时间超过一周，则不能投票
-	if float64(time.Now().Unix())-postTime > oneWeekInSeconds {
-		return ErrVoteTimeExpire
+	//如果帖子发布时间超过一周，则权重减半
+	if float64(time.Now().Unix())-postTime > constants.OneWeekInSeconds {
+		weight = 0.5
 	}
 
 	//2.更新帖子分数
@@ -59,43 +52,15 @@ func VoteForPost(userID, postID string, value float64) error {
 	pipeline := client.TxPipeline()
 
 	//给指定的键和成员名增加分数
-	pipeline.ZIncrBy(getRedisKey(KeyPostScoreZSet), diff*scorePerVote, postID)
+	pipeline.ZIncrBy(getRedisKey(KeyPostScoreZSet), diff*constants.ScorePerVote*weight, postID)
 
 	//3.更新用户为该帖子投票的数据
-	//if value == 0 { //如果是取消投票，根据userID移除成员名(userID)和分数对
-	//	pipeline.ZRem(getRedisKey(KeyPostVotedZSetPF+postID), userID)
-	//} else { //如果投了赞成票或反对票，在该贴子的投票记录中增加此次投票的数据
 	pipeline.ZAdd(getRedisKey(KeyPostVotedZSetPF+postID), redis.Z{
 		Score:  value, //投票类型
 		Member: userID,
 	})
-	//}
 
 	//执行事务
-	_, err := pipeline.Exec()
-	return err
-}
-
-// 新建帖子
-func CreatePost(postId int64, communityID int64) error {
-	//开启事务
-	pipeline := client.TxPipeline()
-
-	//在redis中更新帖子创建时间
-	pipeline.ZAdd(getRedisKey(KeyPostTimeZSet), redis.Z{
-		Score:  float64(time.Now().Unix()),
-		Member: postId,
-	})
-
-	//在redis中更新帖子分数
-	pipeline.ZAdd(getRedisKey(KeyPostScoreZSet), redis.Z{
-		Score:  float64(time.Now().Unix()),
-		Member: postId,
-	})
-
-	//在redis中更新帖子和社区关系
-	pipeline.SAdd(getRedisKey(KeyCommunitySetPF+strconv.Itoa(int(communityID))), postId)
-
 	_, err := pipeline.Exec()
 	return err
 }

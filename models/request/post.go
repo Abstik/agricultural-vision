@@ -17,5 +17,5 @@ type PostListRequest struct {
 // 批量查询帖子（根据社区id查询）
 type CommunityPostListRequest struct {
 	PostListRequest       //嵌入获取帖子列表的参数的结构体
-	CommunityID     int64 `json:"community_id" form:"community_id"` //社区id
+	CommunityID     int64 `json:"community_id" form:"community_id" binding:"required"` //社区id
 }

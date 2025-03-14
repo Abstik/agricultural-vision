@@ -1,8 +1,6 @@
 package logic
 
 import (
-	response2 "agricultural_vision/models/response"
-	"agricultural_vision/settings"
 	"bytes"
 	"encoding/json"
 	"io"
@@ -10,13 +8,16 @@ import (
 	"strconv"
 	"sync"
 
-	"agricultural_vision/models"
+	"agricultural_vision/constants"
+	"agricultural_vision/models/request"
+	"agricultural_vision/models/response"
+	"agricultural_vision/settings"
 )
 
 var userConversations = make(map[string]*response.Conversation) // 使用 map 保存每个用户的对话历史
 var mutex = sync.Mutex{}                                        // 保护 map 的并发访问
 
-func AiTalk(aiRequest *response.AiRequest, userID int64) (aiResponse *response.AiResponse, err error) {
+func AiTalk(aiRequest *request.AiRequest, userID int64) (aiResponse *response.AiResponse, err error) {
 	aiResponse = new(response.AiResponse)
 	id := strconv.FormatInt(userID, 10)
 
@@ -101,6 +102,6 @@ func AiTalk(aiRequest *response.AiRequest, userID int64) (aiResponse *response.A
 		aiResponse.Answer = aiAnswer
 		return
 	} else {
-		return nil, response2.ErrorAiNotAnswer
+		return nil, constants.ErrorAiNotAnswer
 	}
 }

@@ -1,13 +1,8 @@
-package response
+package constants
 
 //封装自定义的状态码和信息
 
 type ResCode int64
-
-const (
-	OrderTime  = "time"
-	OrderScore = "score"
-)
 
 const (
 	CodeSuccess          string = "success"
@@ -21,5 +16,6 @@ const (
 	CodeAiNotAnswer      string = "AI未回答"
 	CodeServerBusy       string = "服务繁忙"
 	CodeNoResult         string = "未查询到结果"
+	CodeVoteTimeExpire   string = "投票时间已结束"
 	CodeInvalidID        string = "无效的id"
 )

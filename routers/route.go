@@ -52,6 +52,12 @@ func SetupRouter(mode string) *gin.Engine {
 			// 修改个人头像
 			userGroup.POST("/avatar", controller.UpdateUserAvatarHandler)
 
+			// 查询用户的帖子列表
+			userGroup.GET("/posts", controller.GetUserPostListHandler)
+			// 查询用户的点赞列表
+			userGroup.GET("/likes", controller.GetUserLikeListHandler)
+			// 查询用户的评论列表
+			userGroup.GET("/comments", controller.GetUserCommentListHandler)
 		}
 	}
 
@@ -83,30 +89,18 @@ func SetupRouter(mode string) *gin.Engine {
 		communityPost.POST("/post", controller.CreatePostHandler)
 		// 删除帖子
 		communityPost.DELETE("/post/:id", controller.DeletePostHandler)
-		// 查询帖子列表（指定排序方式）
+		// 查询帖子列表（指定排序方式，默认按时间倒序）
 		communityPost.GET("/posts", controller.GetPostListHandler)
-		// 查询帖子列表（指定社区）
+		// 查询帖子列表（指定社区）（指定排序方式，默认按时间倒序）
 		communityPost.GET("/community/:id/posts", controller.GetCommunityPostListHandler)
-		// 查询帖子详情
-		communityPost.GET("/post/:id", controller.GetPostDetailHandler)
 		// 帖子投票
 		communityPost.POST("/post/vote", controller.PostVoteController)
 		// 发布评论
 		communityPost.POST("/comment", controller.CreateCommentHandler)
+		// 查询帖子评论
+		communityPost.GET("/comment", controller.GetCommentListHandler)
 		// 评论投票
 		communityPost.POST("/comment/vote", controller.CommentVoteController)
-
-		// 查询帖子详情（根据id）
-		communityPost.GET("/post/:id", controller.GetPostDetailHandler)
-		//查询帖子详情列表(分页)
-		communityPost.GET("/post1", controller.GetPostListHandler)
-		//查询帖子详情列表（分页）（指定排序方式）
-		communityPost.GET("post2", controller.GetPostListHandler2)
-		//查询帖子详情列表（分页）（指定社区）
-		communityPost.GET("post3", controller.GetCommunityPostListHandler)
-
-		//投票
-		communityPost.POST("/vote", controller.PostVoteController)
 	}
 
 	r.NoRoute(func(c *gin.Context) {

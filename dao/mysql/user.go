@@ -1,11 +1,13 @@
 package mysql
 
 import (
-	"agricultural_vision/models/entity"
 	"agricultural_vision/models/response"
 	"errors"
 
 	"gorm.io/gorm"
+
+	"agricultural_vision/constants"
+	"agricultural_vision/models/entity"
 )
 
 // 查询邮箱是否已注册
@@ -38,13 +40,13 @@ func Login(email, password string) (*entity.User, error) {
 	err := DB.Where("email = ?", email).First(user).Error
 	// 如果查询不到用户，返回用户不存在错误
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return user, response.ErrorEmailNotExist
+		return user, constants.ErrorEmailNotExist
 	}
 
 	// 判断密码是否正确
 	// 如果密码不正确，返回密码不正确错误
 	if password != user.Password {
-		return user, response.ErrorInvalidPassword
+		return user, constants.ErrorInvalidPassword
 	}
 
 	return user, nil
@@ -52,15 +54,22 @@ func Login(email, password string) (*entity.User, error) {
 
 // 根据用户ID更新用户信息
 func UpdateUserByID(user *entity.User) error {
-	err := DB.Model(&entity.User{}).Where("id = ?", user.Id).Updates(user).Error
+	err := DB.Model(&entity.User{}).Where("id = ?", user.ID).Updates(user).Error
 	return err
 }
 
-// 根据用户ID获取用户信息
+// 根据用户ID获取用户详细信息
 func GetUserInfo(id int64) (*entity.User, error) {
 	user := new(entity.User)
 	err := DB.Where("id = ?", id).First(user).Error
 	return user, err
+}
+
+// 根据用户ID获取用户简略信息
+func GetUserBriefInfo(id int64) (*response.UserBriefResponse, error) {
+	userBriefResponse := new(response.UserBriefResponse)
+	err := DB.Model(&entity.User{}).Select("id", "username", "avatar").Where("id = ?", id).First(userBriefResponse).Error
+	return userBriefResponse, err
 }
 
 // 根据邮箱更新用户密码

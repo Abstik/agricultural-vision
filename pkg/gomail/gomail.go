@@ -1,7 +1,7 @@
 package gomail
 
 import (
-	"agricultural_vision/models/response"
+	"agricultural_vision/constants"
 	"fmt"
 	"math/rand"
 	"time"
@@ -82,12 +82,12 @@ func VerifyVerificationCode(email string, code string) error {
 
 	// 如果找不到验证码或验证码已过期
 	if !found {
-		return response.ErrorInvalidEmailCode
+		return constants.ErrorInvalidEmailCode
 	}
 
 	// 如果验证码不匹配
 	if cachedCode != code {
-		return response.ErrorInvalidEmailCode
+		return constants.ErrorInvalidEmailCode
 	}
 
 	return nil

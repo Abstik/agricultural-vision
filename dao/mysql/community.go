@@ -1,13 +1,13 @@
 package mysql
 
 import (
-	"agricultural_vision/models"
 	"agricultural_vision/models/entity"
+	"agricultural_vision/models/response"
 )
 
 // 查询社区列表
-func GetCommunityList() ([]*response.CommunityResponse, error) {
-	var communities []*response.CommunityResponse
+func GetCommunityList() ([]*response.CommunityBriefResponse, error) {
+	var communities []*response.CommunityBriefResponse
 
 	result := DB.Model(&response.CommunityResponse{}).
 		Select("community_id", "community_name").
@@ -24,7 +24,7 @@ func GetCommunityList() ([]*response.CommunityResponse, error) {
 }
 
 // 根据ID获取社区详情
-func GetCommunityDetailById(id int64) (*entity.Community, error) {
+func GetCommunityById(id int64) (*entity.Community, error) {
 	var community entity.Community
 
 	result := DB.Where("community_id = ?", id).First(&community)

@@ -1,10 +1,11 @@
 package mysql
 
 import (
-	"agricultural_vision/models/entity"
 	"errors"
 	"fmt"
 	"strings"
+
+	"agricultural_vision/models/entity"
 )
 
 // 创建帖子
@@ -28,19 +29,6 @@ func GetPostById(pid int64) (*entity.Post, error) {
 	return post, result.Error
 }
 
-// 查询帖子列表
-func GetPostList(pageNum, pageSize int64) ([]*entity.Post, error) {
-	var posts []*entity.Post
-
-	result := DB.
-		Order("created_time DESC").
-		Offset(int((pageNum - 1) * pageSize)).
-		Limit(int(pageSize)).
-		Find(&posts)
-
-	return posts, result.Error
-}
-
 // 根据给定的id列表查询帖子数据
 func GetPostListByIDs(ids []string) ([]*entity.Post, error) {
 	var posts []*entity.Post
@@ -57,4 +45,15 @@ func GetPostListByIDs(ids []string) ([]*entity.Post, error) {
 		Find(&posts)
 
 	return posts, result.Error
+}
+
+func DeletePost(id int64) error {
+	result := DB.Delete(&entity.Post{}, id)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("删除帖子失败")
+	}
+	return nil
 }
