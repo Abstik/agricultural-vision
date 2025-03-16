@@ -1,10 +1,10 @@
 package mysql
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
+	"agricultural_vision/constants"
 	"agricultural_vision/models/entity"
 )
 
@@ -17,7 +17,19 @@ func CreatePost(p *entity.Post) error {
 	}
 	// 虽然没有发生错误，但插入操作没有成功插入任何数据
 	if result.RowsAffected == 0 {
-		return errors.New("创建帖子失败")
+		return constants.ErrorNotAffectData
+	}
+	return nil
+}
+
+// 删除帖子
+func DeletePost(id int64) error {
+	result := DB.Delete(&entity.Post{}, id)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return constants.ErrorNotAffectData
 	}
 	return nil
 }
@@ -40,20 +52,9 @@ func GetPostListByIDs(ids []string) ([]*entity.Post, error) {
 	//order by FIND_IN_SET(post_id, ?) 表示根据 post_id 在另一个给定字符串列表中的位置进行排序。
 	//? 是另一个占位符，将被替换为一个包含多个ID的字符串，例如 "1,3,2"。
 	result := DB.
-		Where("post_id IN ?", ids).
-		Order(fmt.Sprintf("FIELD(post_id, %s)", strings.Join(ids, ","))).
+		Where("id IN ?", ids).
+		Order(fmt.Sprintf("FIELD(id, %s)", strings.Join(ids, ","))).
 		Find(&posts)
 
 	return posts, result.Error
-}
-
-func DeletePost(id int64) error {
-	result := DB.Delete(&entity.Post{}, id)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return errors.New("删除帖子失败")
-	}
-	return nil
 }

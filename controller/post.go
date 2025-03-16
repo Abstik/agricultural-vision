@@ -8,7 +8,6 @@ import (
 	"go.uber.org/zap"
 
 	"agricultural_vision/constants"
-	"agricultural_vision/dao/mysql"
 	"agricultural_vision/logic"
 	"agricultural_vision/middleware"
 	"agricultural_vision/models/request"
@@ -44,15 +43,16 @@ func CreatePostHandler(c *gin.Context) {
 
 // 删除帖子
 func DeletePostHandler(c *gin.Context) {
-	postID := c.Param("id")
-	id, err := strconv.ParseInt(postID, 10, 64)
+	postID := c.Param("post_id")
+
+	postIDStr, err := strconv.ParseInt(postID, 10, 64)
 	if err != nil {
 		zap.L().Error("请求参数错误", zap.Error(err))
 		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
 		return
 	}
 
-	if err := mysql.DeletePost(id); err != nil {
+	if err := logic.DeletePost(postIDStr); err != nil {
 		zap.L().Error("删除帖子失败", zap.Error(err))
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
 		return
@@ -67,7 +67,7 @@ func DeletePostHandler(c *gin.Context) {
 // 3.根据id去数据库查询帖子详细信息
 func GetPostListHandler(c *gin.Context) {
 	//初始化结构体时指定初始默认参数
-	p := &request.PostListRequest{
+	p := &request.ListRequest{
 		Page:  1,
 		Size:  10,
 		Order: constants.OrderTime,
@@ -93,22 +93,24 @@ func GetPostListHandler(c *gin.Context) {
 // 查询该社区分类下的帖子详情列表
 func GetCommunityPostListHandler(c *gin.Context) {
 	//初始化结构体时指定初始默认参数
-	p := &request.CommunityPostListRequest{
-		PostListRequest: request.PostListRequest{
-			Page:  1,
-			Size:  10,
-			Order: constants.OrderTime,
-		},
+	p := &request.ListRequest{
+		Page:  1,
+		Size:  10,
+		Order: constants.OrderTime,
 	}
-	err := c.ShouldBindQuery(p)
-	if err != nil {
-		zap.L().Error("请求参数错误", zap.Error(err))
+	err1 := c.ShouldBindQuery(p)
+
+	communityIDStr := c.Param("id")
+	communityID, err2 := strconv.ParseInt(communityIDStr, 10, 64)
+
+	if err1 != nil || err2 != nil {
+		zap.L().Error("请求参数错误", zap.Error(err1), zap.Error(err2))
 		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
 		return
 	}
 
 	//根据社区查询该社区分类下的帖子列表
-	data, err := logic.GetCommunityPostList(p)
+	data, err := logic.GetCommunityPostList(p, communityID)
 	if err != nil {
 		zap.L().Error("根据社区查询帖子列表失败", zap.Error(err))
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)

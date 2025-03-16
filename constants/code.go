@@ -15,7 +15,6 @@ const (
 	CodeInvalidAToken    string = "无效的token"
 	CodeAiNotAnswer      string = "AI未回答"
 	CodeServerBusy       string = "服务繁忙"
-	CodeNoResult         string = "未查询到结果"
-	CodeVoteTimeExpire   string = "投票时间已结束"
 	CodeInvalidID        string = "无效的id"
+	CodeNotAffectData    string = "未影响到数据"
 )

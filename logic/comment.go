@@ -1,0 +1,150 @@
+package logic
+
+import (
+	"go.uber.org/zap"
+	"strconv"
+
+	"agricultural_vision/dao/mysql"
+	"agricultural_vision/dao/redis"
+	"agricultural_vision/models/entity"
+	"agricultural_vision/models/request"
+	"agricultural_vision/models/response"
+)
+
+// 创建一级评论
+func CreateComment(createCommentRequest *request.CreateCommentRequest, userID int64) error {
+	// 1.在mysql中创建评论
+	comment := &entity.Comment{
+		Content:  createCommentRequest.Content,
+		ParentID: createCommentRequest.ParentID,
+		RootID:   createCommentRequest.RootID,
+		AuthorID: userID,
+		PostID:   createCommentRequest.PostID,
+	}
+
+	if err := mysql.CreateComment(comment); err != nil {
+		return err
+	}
+
+	// 2.在redis中创建评论
+	if createCommentRequest.ParentID == nil {
+		// 在redis中创建一级评论
+		err := redis.CreateFirstLevelComment(comment.ID, comment.PostID)
+		return err
+	} else {
+		// 在redis中创建二级评论
+		err := redis.CreateSecondLevelComment(*comment.ParentID)
+		return err
+	}
+}
+
+// 删除评论
+func DeleteComment(commentID int64, userID int64) error {
+	// 从mysql中查找parentID和postID
+	parentID, postID, err := mysql.GetParentIDAndPostIDByCommentID(commentID)
+	if err != nil {
+		return err
+	}
+
+	// 在mysql中删除评论
+	if err := mysql.DeleteComment(commentID); err != nil {
+		return err
+	}
+
+	// 在redis中删除评论
+	if err := redis.DeleteComment(commentID, *parentID, *postID, userID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// 查询一级评论
+func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest) (commentListResponse *response.CommentListResponse, err error) {
+	//从redis中，根据指定的排序方式和查询数量，查询符合条件的id列表
+	ids, err := redis.GetCommentIDsInOrder(listRequest, postID)
+	if err != nil {
+		return
+	}
+	commentListResponse.Total = int64(len(ids))
+
+	//根据id列表去数据库查询评论详细信息
+	comments, err := mysql.GetCommentListByIDs(ids)
+	if err != nil {
+		return
+	}
+
+	// 查询所有一级评论的赞成票数——切片
+	voteData, err := redis.GetCommentVoteDataByIDs(ids)
+	if err != nil {
+		return
+	}
+
+	// 查询所有一级评论的二级评论数——切片
+	commentNum, err := redis.GetSecondLevelCommentNumByIDs(ids)
+
+	//将帖子作者及分区信息查询出来填充到帖子中
+	for idx, comment := range comments {
+		//查询作者简略信息
+		userBriefInfo, err := mysql.GetUserBriefInfo(comment.AuthorID)
+		if err != nil {
+			zap.L().Error("查询作者信息失败", zap.Error(err))
+			continue
+		}
+
+		//封装查询到的信息
+		commentResponse := &response.CommentResponse{
+			ID:           comment.ID,
+			Content:      comment.Content,
+			LikeCount:    voteData[idx],
+			RepliesCount: int64(commentNum[idx]),
+			Author:       *userBriefInfo,
+			CreatedAt:    comment.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
+
+		commentListResponse.Data = append(commentListResponse.Data, commentResponse)
+	}
+	return
+}
+
+// 查询二级评论
+func GetSecondLevelCommentList(commentID int64, listRequest *request.ListRequest) (commentListResponse response.CommentListResponse, err error) {
+	// 从mysql中查询二级评论
+	comments, err := mysql.GetSecondLevelCommentList(commentID, listRequest)
+	if err != nil {
+		return
+	}
+
+	var commentIDs []string
+	for _, comment := range comments {
+		commentIDs = append(commentIDs, strconv.FormatInt(comment.ID, 10)) // 提取每个二级评论的 ID
+	}
+
+	// 查询所有二级评论的赞成票数——切片
+	voteData, err := redis.GetCommentVoteDataByIDs(commentIDs)
+	if err != nil {
+		return
+	}
+
+	//将帖子作者及分区信息查询出来填充到帖子中
+	for idx, comment := range comments {
+		//查询作者简略信息
+		userBriefInfo, err := mysql.GetUserBriefInfo(comment.AuthorID)
+		if err != nil {
+			zap.L().Error("查询作者信息失败", zap.Error(err))
+			continue
+		}
+
+		//封装查询到的信息
+		commentResponse := &response.CommentResponse{
+			ID:        comment.ID,
+			Content:   comment.Content,
+			LikeCount: voteData[idx],
+			Author:    *userBriefInfo,
+			CreatedAt: comment.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
+
+		commentListResponse.Data = append(commentListResponse.Data, commentResponse)
+	}
+	return
+}

@@ -12,7 +12,6 @@ var (
 	ErrorInvalidPassword  = errors.New(CodeInvalidPassword)
 	ErrorInvalidEmailCode = errors.New(CodeInvalidEmailCode)
 	ErrorAiNotAnswer      = errors.New(CodeAiNotAnswer)
-	ErrorNoResult         = errors.New(CodeNoResult)
 	ErrorInvalidID        = errors.New(CodeInvalidID)
-	ErrorVoteTimeExpire   = errors.New(CodeVoteTimeExpire)
+	ErrorNotAffectData    = errors.New(CodeNotAffectData)
 )

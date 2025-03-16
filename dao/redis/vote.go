@@ -28,7 +28,7 @@ direction=0时：
 */
 
 // 为帖子投票
-func VoteForPost(userID, postID string, value float64) error {
+func VoteForPost(userID, postID string, direction float64) error {
 	// 投票的权重，如果帖子发布时间超过一周，则权重为0.5（减半）
 	weight := 1.0
 
@@ -46,7 +46,7 @@ func VoteForPost(userID, postID string, value float64) error {
 	//2.更新帖子分数
 	//查询当前用户(userID)给当前帖子(postID)的投票记录
 	ov := client.ZScore(getRedisKey(KeyPostVotedZSetPF+postID), userID).Val() // 上次投票类型：1 or 0 or -1
-	diff := value - ov                                                        //计算两次投票类型的差值
+	diff := direction - ov                                                    //计算两次投票类型的差值
 
 	//开启事务
 	pipeline := client.TxPipeline()
@@ -56,7 +56,47 @@ func VoteForPost(userID, postID string, value float64) error {
 
 	//3.更新用户为该帖子投票的数据
 	pipeline.ZAdd(getRedisKey(KeyPostVotedZSetPF+postID), redis.Z{
-		Score:  value, //投票类型
+		Score:  direction, //投票类型
+		Member: userID,
+	})
+
+	//执行事务
+	_, err := pipeline.Exec()
+	return err
+}
+
+// 为评论投票
+func VoteForComment(userID string, commentID string, postID string, direction float64, firstLevel bool) error {
+	// 投票的权重，如果一级评论发布时间超过一周，则权重为0.5（减半）
+	weight := 1.0
+
+	//1.判断投票限制
+	//利用redis获取帖子发布时间
+	//ZScore函数的两个参数：键名和成员名，获取该成员的分数score
+	//Val将结果转换为float64类型
+	commentTime := client.ZScore(getRedisKey(KeyCommentTimeZSetPF), commentID).Val()
+
+	//如果帖子发布时间超过一周，则权重减半
+	if float64(time.Now().Unix())-commentTime > constants.OneWeekInSeconds {
+		weight = 0.5
+	}
+
+	//2.更新一级评论分数
+	//查询当前用户(userID)给当前一级评论的投票记录
+	ov := client.ZScore(getRedisKey(KeyCommentVotedZSetPF+commentID), userID).Val() // 上次投票类型：1 or 0 or -1
+	diff := direction - ov                                                          //计算两次投票类型的差值
+
+	//开启事务
+	pipeline := client.TxPipeline()
+
+	//给指定的键和成员名增加分数
+	if firstLevel { // 如果是一级评论才更新
+		pipeline.ZIncrBy(getRedisKey(KeyCommentScoreZSetPF+postID), diff*constants.ScorePerVote*weight, commentID)
+	}
+
+	//3.更新用户为该帖子投票的数据
+	pipeline.ZAdd(getRedisKey(KeyCommentVotedZSetPF+commentID), redis.Z{
+		Score:  direction, //投票类型
 		Member: userID,
 	})
 

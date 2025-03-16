@@ -15,7 +15,7 @@ import (
 
 // 投票功能
 func PostVoteController(c *gin.Context) {
-	p := new(request.VotePostRequest)
+	p := new(request.VoteRequest)
 	//参数校验
 	err := c.ShouldBindJSON(p)
 	if err != nil {

@@ -19,24 +19,47 @@ func CreatePost(createPostRequest *request.CreatePostRequest, authorID int64) (e
 		CommunityID: createPostRequest.CommunityID,
 	}
 
-	//2.保存到数据库
+	//保存到数据库
 	err = mysql.CreatePost(post)
 	if err != nil {
 		return
 	}
 
-	//3.保存到redis
+	//保存到redis
 	err = redis.CreatePost(post.ID, post.CommunityID)
 	return
 }
 
+// 删除帖子
+func DeletePost(postID int64) error {
+	// 从mysql查询帖子所属的社区id
+	post, err := mysql.GetPostById(postID)
+	if err != nil {
+		return err
+	}
+	communityID := post.CommunityID
+
+	// 删除mysql中的帖子
+	if err := mysql.DeletePost(postID); err != nil {
+		return err
+	}
+
+	// 删除redis中的帖子
+	if err := redis.DeletePost(postID, communityID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // 查询帖子列表，并按照指定方式排序
-func GetPostList(p *request.PostListRequest) (postResponses []*response.PostResponse, err error) {
+func GetPostList(p *request.ListRequest) (postListResponse *response.PostListResponse, err error) {
 	//从redis中，根据指定的排序方式和查询数量，查询符合条件的id列表
 	ids, err := redis.GetPostIDsInOrder(p)
 	if err != nil {
 		return
 	}
+	postListResponse.Total = int64(len(ids))
 
 	//根据id列表去数据库查询帖子详细信息
 	posts, err := mysql.GetPostListByIDs(ids)
@@ -51,7 +74,7 @@ func GetPostList(p *request.PostListRequest) (postResponses []*response.PostResp
 	}
 
 	// 查询所有帖子的评论数——切片
-	commentNum, err := redis.GetCommentNumByID(ids)
+	commentNum, err := redis.GetCommentNumByIDs(ids)
 
 	//将帖子作者及分区信息查询出来填充到帖子中
 	for idx, post := range posts {
@@ -81,18 +104,19 @@ func GetPostList(p *request.PostListRequest) (postResponses []*response.PostResp
 			Community:    response.CommunityBriefResponse{CommunityID: community.ID, CommunityName: community.CommunityName},
 		}
 
-		postResponses = append(postResponses, postResponse)
+		postListResponse.Data = append(postListResponse.Data, postResponse)
 	}
 	return
 }
 
 // 查询该社区下的帖子列表，并按指定方式排序
-func GetCommunityPostList(postListRequest *request.CommunityPostListRequest) (postResponses []*response.PostResponse, err error) {
+func GetCommunityPostList(listRequest *request.ListRequest, communityID int64) (postListResponse *response.PostListResponse, err error) {
 	//从redis中，根据指定的排序方式和查询数量，查询符合条件的分页后的id列表
-	ids, err := redis.GetCommunityPostIDsInOrder(postListRequest)
+	ids, err := redis.GetCommunityPostIDsInOrder(listRequest, communityID)
 	if err != nil {
 		return
 	}
+	postListResponse.Total = int64(len(ids))
 
 	//根据id列表去数据库查询帖子详细信息
 	posts, err := mysql.GetPostListByIDs(ids)
@@ -107,7 +131,7 @@ func GetCommunityPostList(postListRequest *request.CommunityPostListRequest) (po
 	}
 
 	// 查询所有帖子的评论数——切片
-	commentNum, err := redis.GetCommentNumByID(ids)
+	commentNum, err := redis.GetCommentNumByIDs(ids)
 
 	//将帖子作者及分区信息查询出来填充到帖子中
 	for idx, post := range posts {
@@ -126,7 +150,7 @@ func GetCommunityPostList(postListRequest *request.CommunityPostListRequest) (po
 		}
 
 		//封装查询到的信息
-		postDetail := &response.PostResponse{
+		postResponse := &response.PostResponse{
 			ID:           post.ID,
 			Content:      post.Content,
 			Image:        post.Image,
@@ -137,7 +161,7 @@ func GetCommunityPostList(postListRequest *request.CommunityPostListRequest) (po
 			Community:    response.CommunityBriefResponse{CommunityID: community.ID, CommunityName: community.CommunityName},
 		}
 
-		postResponses = append(postResponses, postDetail)
+		postListResponse.Data = append(postListResponse.Data, postResponse)
 	}
 	return
 }

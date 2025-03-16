@@ -85,7 +85,7 @@ func SetupRouter(mode string) *gin.Engine {
 		// 查询社区详情
 		communityPost.GET("/community/:id", controller.CommunityDetailHandler)
 
-		// 创建帖子
+		// 发布帖子
 		communityPost.POST("/post", controller.CreatePostHandler)
 		// 删除帖子
 		communityPost.DELETE("/post/:id", controller.DeletePostHandler)
@@ -95,10 +95,15 @@ func SetupRouter(mode string) *gin.Engine {
 		communityPost.GET("/community/:id/posts", controller.GetCommunityPostListHandler)
 		// 帖子投票
 		communityPost.POST("/post/vote", controller.PostVoteController)
+
 		// 发布评论
 		communityPost.POST("/comment", controller.CreateCommentHandler)
-		// 查询帖子评论
-		communityPost.GET("/comment", controller.GetCommentListHandler)
+		// 删除评论
+		communityPost.DELETE("/comment/:comment_id", controller.DeleteCommentHandler)
+		// 查询一级评论（指定排序方式，默认按时间倒序）
+		communityPost.GET("/comment/:post_id", controller.GetFirstLevelCommentListHandler)
+		// 查询二级评论（无法排序）
+		communityPost.GET("/comment/:comment_id", controller.GetSecondLevelCommentListHandler)
 		// 评论投票
 		communityPost.POST("/comment/vote", controller.CommentVoteController)
 	}

@@ -12,29 +12,80 @@ import (
 
 // 新建帖子
 func CreatePost(postID int64, communityID int64) error {
-	postIDStr := strconv.FormatInt(postID, 10)
-
 	//开启事务
 	pipeline := client.TxPipeline()
 
 	//在redis中更新帖子创建时间
 	pipeline.ZAdd(getRedisKey(KeyPostTimeZSet), redis.Z{
 		Score:  float64(time.Now().Unix()),
-		Member: postIDStr,
+		Member: postID,
 	})
 
 	//在redis中更新帖子分数
 	pipeline.ZAdd(getRedisKey(KeyPostScoreZSet), redis.Z{
 		Score:  float64(time.Now().Unix()), // 默认分数不是0，而是当前的时间戳（这样总分数可以结合投票数和时间）
-		Member: postIDStr,
+		Member: postID,
 	})
 
 	//在redis中更新帖子和社区关系
 	pipeline.SAdd(getRedisKey(KeyCommunitySetPF+strconv.Itoa(int(communityID))), postID)
 
-	// 更新帖子评论数
-	pipeline.ZIncrBy(getRedisKey(KeyPostCommentNumZSet), 0, postIDStr)
+	//初始化帖子评论数
+	pipeline.ZAdd(getRedisKey(KeyPostCommentNumZSet), redis.Z{
+		Score:  0,
+		Member: postID,
+	})
 
+	_, err := pipeline.Exec()
+	return err
+}
+
+// 删除帖子
+func DeletePost(postID int64, communityID int64) error {
+	pipeline := client.TxPipeline()
+
+	// 先查询出此帖子所有评论的 id
+	commentIDs, _ := client.ZRange(getRedisKey(KeyCommentTimeZSetPF+strconv.FormatInt(postID, 10)), 0, -1).Result()
+
+	// 1. 从时间排序集合删除
+	pipeline.ZRem(getRedisKey(KeyPostTimeZSet), postID) // 从 zset 中移除指定成员
+
+	// 2. 从热度排序集合删除
+	pipeline.ZRem(getRedisKey(KeyPostScoreZSet), postID)
+
+	// 3. 删除帖子点赞记录
+	pipeline.Del(getRedisKey(KeyPostVotedZSetPF + strconv.FormatInt(postID, 10))) // 删除整个 key
+
+	// 4. 从社区帖子集合删除
+	pipeline.SRem(getRedisKey(KeyCommunitySetPF+strconv.FormatInt(communityID, 10)), postID) // 从 set 中移除指定成员
+
+	// 5. 删除帖子评论数记录
+	pipeline.ZRem(getRedisKey(KeyPostCommentNumZSet), postID)
+
+	// 6. 删除该帖子下的所有评论时间记录
+	pipeline.Del(getRedisKey(KeyCommentTimeZSetPF + strconv.FormatInt(postID, 10)))
+
+	// 7. 删除该帖子下的所有评论投票记录
+	pipeline.Del(getRedisKey(KeyCommentScoreZSetPF + strconv.FormatInt(postID, 10)))
+
+	// 8. 处理该帖子下所有评论的删除
+	if len(commentIDs) > 0 {
+		// 8.1 删除该帖子下所有评论的点赞记录，拼凑出需要删除的key的列表，一次性删除多个 key，提高性能
+		keysToDelete := make([]string, len(commentIDs))
+		for i, commentID := range commentIDs {
+			keysToDelete[i] = getRedisKey(KeyCommentVotedZSetPF + commentID)
+		}
+		pipeline.Del(keysToDelete...) // 一次删除多个 key，提高性能
+
+		// 8.2 删除所有评论的子评论数记录，根据commentId列表删除
+		interfaceIDs := make([]interface{}, len(commentIDs))
+		for i, id := range commentIDs {
+			interfaceIDs[i] = id
+		}
+		pipeline.ZRem(getRedisKey(KeyCommentNumZSet), interfaceIDs...)
+	}
+
+	// 执行事务
 	_, err := pipeline.Exec()
 	return err
 }
@@ -50,10 +101,10 @@ func getIDsFormKey(key string, page, size int64) ([]string, error) {
 }
 
 // 根据排序方式和索引，查询id列表
-func GetPostIDsInOrder(p *request.PostListRequest) ([]string, error) {
+func GetPostIDsInOrder(p *request.ListRequest) ([]string, error) {
 	//从redis中获取id
 	//1.根据用户请求中携带的order参数（排序方式）确定要查询的redis key
-	key := getRedisKey(KeyPostTimeZSet)
+	key := getRedisKey(KeyCommentTimeZSetPF)
 	if p.Order == constants.OrderScore {
 		key = getRedisKey(KeyPostScoreZSet)
 	}
@@ -97,15 +148,8 @@ func GetPostVoteDataByIDs(ids []string) (data []int64, err error) {
 	return data, nil
 }
 
-// 根据id查询此帖子的赞成票数
-func GetPostVoteDataByID(id string) int64 {
-	key := getRedisKey(KeyPostVotedZSetPF + id)
-	data := client.ZCount(key, "1", "1").Val()
-	return data
-}
-
 // 根据社区id查询该社区下的id列表
-func GetCommunityPostIDsInOrder(p *request.CommunityPostListRequest) (ids []string, err error) {
+func GetCommunityPostIDsInOrder(p *request.ListRequest, communityID int64) (ids []string, err error) {
 	//根据指定的排序方式，确定要操作的redis中的key
 	//orderKey指定排序方式的键名，按时间排序则是KeyPostTimeZSet，按分数排序则是KeyPostScoreZSet
 	orderKey := getRedisKey(KeyPostTimeZSet)
@@ -117,10 +161,10 @@ func GetCommunityPostIDsInOrder(p *request.CommunityPostListRequest) (ids []stri
 	//也就是查询交集，将查询到的内容（帖子postID和对应的时间或分数）保存到新的自定义的key中
 
 	//社区的key
-	communityKey := getRedisKey(KeyCommunitySetPF + strconv.Itoa(int(p.CommunityID)))
+	communityKey := getRedisKey(KeyCommunitySetPF + strconv.Itoa(int(communityID)))
 
 	//自定义新key，用来存储两表交集的，值为postID和对应的时间或分数，表示此社区分类下的帖子和时间/分数
-	key := orderKey + strconv.Itoa(int(p.CommunityID))
+	key := orderKey + strconv.Itoa(int(communityID))
 
 	// 使用 pipeline 批量执行 Redis 命令
 	pipeline := client.Pipeline()
