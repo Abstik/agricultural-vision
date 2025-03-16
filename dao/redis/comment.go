@@ -11,7 +11,7 @@ import (
 )
 
 // 创建一级评论
-func CreateFirstLevelComment(commentID int64, postID int64) error {
+func CreateFirstLevelComment(commentID, postID int64) error {
 	postIDStr := strconv.FormatInt(postID, 10)
 
 	//开启事务
@@ -57,7 +57,7 @@ func CreateSecondLevelComment(parentID int64) error {
 }
 
 // 删除评论
-func DeleteComment(commentID int64, parentID int64, postID int64, userID int64) error {
+func DeleteComment(commentID, parentID, postID int64) error {
 	pipeline := client.TxPipeline()
 
 	postIDStr := strconv.FormatInt(postID, 10)

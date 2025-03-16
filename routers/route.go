@@ -51,13 +51,6 @@ func SetupRouter(mode string) *gin.Engine {
 			userGroup.PUT("/info", controller.UpdateUserInfoHandler)
 			// 修改个人头像
 			userGroup.POST("/avatar", controller.UpdateUserAvatarHandler)
-
-			// 查询用户的帖子列表
-			userGroup.GET("/posts", controller.GetUserPostListHandler)
-			// 查询用户的点赞列表
-			userGroup.GET("/likes", controller.GetUserLikeListHandler)
-			// 查询用户的评论列表
-			userGroup.GET("/comments", controller.GetUserCommentListHandler)
 		}
 	}
 
@@ -106,6 +99,16 @@ func SetupRouter(mode string) *gin.Engine {
 		communityPost.GET("/comment/:comment_id", controller.GetSecondLevelCommentListHandler)
 		// 评论投票
 		communityPost.POST("/comment/vote", controller.CommentVoteController)
+
+		userCommunityPost := r.Group("/user", middleware.JWTAuthMiddleware())
+		{
+			// 查询用户的帖子列表（分页）
+			userCommunityPost.GET("/posts", controller.GetUserPostListHandler)
+			// 查询用户点赞的帖子列表（分页）
+			userCommunityPost.GET("/likes", controller.GetUserLikePostListHandler)
+
+		}
+
 	}
 
 	r.NoRoute(func(c *gin.Context) {

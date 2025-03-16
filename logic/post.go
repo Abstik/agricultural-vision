@@ -1,6 +1,8 @@
 package logic
 
 import (
+	"strconv"
+
 	"go.uber.org/zap"
 
 	"agricultural_vision/dao/mysql"
@@ -52,15 +54,8 @@ func DeletePost(postID int64) error {
 	return nil
 }
 
-// 查询帖子列表，并按照指定方式排序
-func GetPostList(p *request.ListRequest) (postListResponse *response.PostListResponse, err error) {
-	//从redis中，根据指定的排序方式和查询数量，查询符合条件的id列表
-	ids, err := redis.GetPostIDsInOrder(p)
-	if err != nil {
-		return
-	}
-	postListResponse.Total = int64(len(ids))
-
+// 根据id列表查询帖子列表，并封装响应数据
+func GetPostListByIDs(ids []string) (postResponses []*response.PostResponse, err error) {
 	//根据id列表去数据库查询帖子详细信息
 	posts, err := mysql.GetPostListByIDs(ids)
 	if err != nil {
@@ -104,64 +99,97 @@ func GetPostList(p *request.ListRequest) (postListResponse *response.PostListRes
 			Community:    response.CommunityBriefResponse{CommunityID: community.ID, CommunityName: community.CommunityName},
 		}
 
-		postListResponse.Data = append(postListResponse.Data, postResponse)
+		postResponses = append(postResponses, postResponse)
 	}
+	return
+}
+
+// 查询帖子列表，并按照指定方式排序
+func GetPostList(p *request.ListRequest) (postListResponse *response.PostListResponse, err error) {
+	postListResponse = &response.PostListResponse{
+		Data: []*response.PostResponse{},
+	}
+
+	// 从redis中，根据指定的排序方式和查询数量，查询符合条件的id列表
+	ids, err := redis.GetPostIDsInOrder(p)
+	if err != nil {
+		return
+	}
+	postListResponse.Total = int64(len(ids))
+	if postListResponse.Total == 0 {
+		return
+	}
+
+	// 根据id列表查询帖子列表，并封装响应数据
+	postListResponse.Data, err = GetPostListByIDs(ids)
 	return
 }
 
 // 查询该社区下的帖子列表，并按指定方式排序
 func GetCommunityPostList(listRequest *request.ListRequest, communityID int64) (postListResponse *response.PostListResponse, err error) {
+	postListResponse = &response.PostListResponse{
+		Data: []*response.PostResponse{},
+	}
+
 	//从redis中，根据指定的排序方式和查询数量，查询符合条件的分页后的id列表
 	ids, err := redis.GetCommunityPostIDsInOrder(listRequest, communityID)
 	if err != nil {
 		return
 	}
 	postListResponse.Total = int64(len(ids))
-
-	//根据id列表去数据库查询帖子详细信息
-	posts, err := mysql.GetPostListByIDs(ids)
-	if err != nil {
+	if postListResponse.Total == 0 {
 		return
 	}
 
-	//根据帖子id列表查询所有帖子的赞成票数
-	voteData, err := redis.GetPostVoteDataByIDs(ids)
+	// 根据id列表查询帖子列表，并封装响应数据
+	postListResponse.Data, err = GetPostListByIDs(ids)
+	return
+}
+
+// 获取用户发布的帖子列表
+func GetUserPostList(userID int64, listRequest *request.ListRequest) (postListResponse *response.PostListResponse, err error) {
+	postListResponse = &response.PostListResponse{
+		Data: []*response.PostResponse{},
+	}
+
+	// 查询该用户的所有帖子
+	posts, err := mysql.GetPostListByUserID(userID, listRequest.Page, listRequest.Size)
 	if err != nil {
 		return
 	}
+	postListResponse.Total = int64(len(posts))
+	if postListResponse.Total == 0 {
+		return
+	}
 
-	// 查询所有帖子的评论数——切片
-	commentNum, err := redis.GetCommentNumByIDs(ids)
-
-	//将帖子作者及分区信息查询出来填充到帖子中
+	// 拼凑帖子id列表
+	ids := make([]string, postListResponse.Total)
 	for idx, post := range posts {
-		//根据作者id查询作者信息
-		userBriefInfo, err := mysql.GetUserBriefInfo(post.AuthorID)
-		if err != nil {
-			zap.L().Error("查询作者信息失败", zap.Error(err))
-			continue
-		}
-
-		//根据社区id查询社区详情
-		community, err := mysql.GetCommunityById(post.CommunityID)
-		if err != nil {
-			zap.L().Error("查询社区详情失败", zap.Error(err))
-			continue
-		}
-
-		//封装查询到的信息
-		postResponse := &response.PostResponse{
-			ID:           post.ID,
-			Content:      post.Content,
-			Image:        post.Image,
-			Author:       *userBriefInfo,
-			LikeCount:    voteData[idx],
-			CommentCount: int64(commentNum[idx]),
-			CreatedAt:    post.CreatedAt.Format("2006-01-02 15:04:05"),
-			Community:    response.CommunityBriefResponse{CommunityID: community.ID, CommunityName: community.CommunityName},
-		}
-
-		postListResponse.Data = append(postListResponse.Data, postResponse)
+		ids[idx] = strconv.Itoa(int(post.ID))
 	}
+
+	// 根据id列表查询帖子列表，并封装响应数据
+	postListResponse.Data, err = GetPostListByIDs(ids)
+	return
+}
+
+// 获取用户点赞的帖子列表
+func GetUserLikePostList(userID int64, listRequest *request.ListRequest) (postListResponse *response.PostListResponse, err error) {
+	postListResponse = &response.PostListResponse{
+		Data: []*response.PostResponse{},
+	}
+
+	// 从redis中查询用户点赞的帖子id列表
+	ids, err := redis.GetUserLikeIDsInOrder(userID, listRequest.Page, listRequest.Size)
+	if err != nil {
+		return
+	}
+	postListResponse.Total = int64(len(ids))
+	if postListResponse.Total == 0 {
+		return
+	}
+
+	// 根据id列表查询帖子列表，并封装响应数据
+	postListResponse.Data, err = GetPostListByIDs(ids)
 	return
 }

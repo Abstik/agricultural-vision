@@ -53,16 +53,8 @@ func DeleteCommentHandler(c *gin.Context) {
 		return
 	}
 
-	// 获取用户id
-	userID, err := middleware.GetCurrentUserID(c)
-	if err != nil {
-		zap.L().Error("获取userID失败", zap.Error(err))
-		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
-		return
-	}
-
 	// 删除帖子
-	err = logic.DeleteComment(commentID, userID)
+	err := logic.DeleteComment(commentID)
 	if err != nil {
 		zap.L().Error("删除评论失败", zap.Error(err))
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)

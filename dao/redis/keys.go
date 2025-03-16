@@ -18,6 +18,9 @@ const (
 	KeyCommentTimeZSetPF  = "comment:time:"  // zset; key=comment:time:{postID}, 成员=commentID, 分数=评论时间
 	KeyCommentScoreZSetPF = "comment:score:" // zset; key=comment:score:{postID}, 成员=commentID, 分数=评论投票分数
 	KeyCommentVotedZSetPF = "comment:voted:" // zset; key=comment:voted:{commentID}, 成员=userID, 分数=1(点赞) / -1(踩)
+
+	// 用户点赞相关
+	KeyUserLikedPostsZSetPF = "user_liked:posts:" // set; key=post:voted:{userID}, 成员=postID
 )
 
 func getRedisKey(key string) string {

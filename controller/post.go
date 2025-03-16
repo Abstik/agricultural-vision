@@ -119,3 +119,53 @@ func GetCommunityPostListHandler(c *gin.Context) {
 	ResponseSuccess(c, data)
 	return
 }
+
+// 获取用户帖子列表
+func GetUserPostListHandler(c *gin.Context) {
+	userID, err := middleware.GetCurrentUserID(c)
+	if err != nil {
+		zap.L().Error("获取userID失败", zap.Error(err))
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
+
+	listRequest := new(request.ListRequest)
+	if err := c.ShouldBindQuery(listRequest); err != nil {
+		zap.L().Error("参数校验失败", zap.Error(err))
+		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
+		return
+	}
+
+	data, err := logic.GetUserPostList(userID, listRequest)
+	if err != nil {
+		zap.L().Error("获取用户帖子列表失败", zap.Error(err))
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
+	ResponseSuccess(c, data)
+}
+
+// 获取用户点赞帖子列表
+func GetUserLikePostListHandler(c *gin.Context) {
+	userID, err := middleware.GetCurrentUserID(c)
+	if err != nil {
+		zap.L().Error("获取userID失败", zap.Error(err))
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
+
+	listRequest := new(request.ListRequest)
+	if err := c.ShouldBindQuery(listRequest); err != nil {
+		zap.L().Error("参数校验失败", zap.Error(err))
+		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
+		return
+	}
+
+	data, err := logic.GetUserLikePostList(userID, listRequest)
+	if err != nil {
+		zap.L().Error("获取用户点赞帖子列表失败", zap.Error(err))
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
+	ResponseSuccess(c, data)
+}

@@ -1,8 +1,9 @@
 package logic
 
 import (
-	"go.uber.org/zap"
 	"strconv"
+
+	"go.uber.org/zap"
 
 	"agricultural_vision/dao/mysql"
 	"agricultural_vision/dao/redis"
@@ -39,7 +40,7 @@ func CreateComment(createCommentRequest *request.CreateCommentRequest, userID in
 }
 
 // 删除评论
-func DeleteComment(commentID int64, userID int64) error {
+func DeleteComment(commentID int64) error {
 	// 从mysql中查找parentID和postID
 	parentID, postID, err := mysql.GetParentIDAndPostIDByCommentID(commentID)
 	if err != nil {
@@ -52,21 +53,28 @@ func DeleteComment(commentID int64, userID int64) error {
 	}
 
 	// 在redis中删除评论
-	if err := redis.DeleteComment(commentID, *parentID, *postID, userID); err != nil {
+	if err := redis.DeleteComment(commentID, *parentID, *postID); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// 查询一级评论
+// 查询单个帖子的一级评论
 func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest) (commentListResponse *response.CommentListResponse, err error) {
+	commentListResponse = &response.CommentListResponse{
+		Data: []*response.CommentResponse{},
+	}
+
 	//从redis中，根据指定的排序方式和查询数量，查询符合条件的id列表
 	ids, err := redis.GetCommentIDsInOrder(listRequest, postID)
 	if err != nil {
 		return
 	}
 	commentListResponse.Total = int64(len(ids))
+	if commentListResponse.Total == 0 {
+		return
+	}
 
 	//根据id列表去数据库查询评论详细信息
 	comments, err := mysql.GetCommentListByIDs(ids)
@@ -107,15 +115,23 @@ func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest) (c
 	return
 }
 
-// 查询二级评论
-func GetSecondLevelCommentList(commentID int64, listRequest *request.ListRequest) (commentListResponse response.CommentListResponse, err error) {
+// 查询单个一级评论的二级评论
+func GetSecondLevelCommentList(commentID int64, listRequest *request.ListRequest) (commentListResponse *response.CommentListResponse, err error) {
+	commentListResponse = &response.CommentListResponse{
+		Data: []*response.CommentResponse{},
+	}
+
 	// 从mysql中查询二级评论
-	comments, err := mysql.GetSecondLevelCommentList(commentID, listRequest)
+	comments, err := mysql.GetSecondLevelCommentList(commentID, listRequest.Page, listRequest.Size)
 	if err != nil {
 		return
 	}
+	commentListResponse.Total = int64(len(comments))
+	if commentListResponse.Total == 0 {
+		return
+	}
 
-	var commentIDs []string
+	commentIDs := make([]string, commentListResponse.Total)
 	for _, comment := range comments {
 		commentIDs = append(commentIDs, strconv.FormatInt(comment.ID, 10)) // 提取每个二级评论的 ID
 	}

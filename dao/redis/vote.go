@@ -32,7 +32,7 @@ func VoteForPost(userID, postID string, direction float64) error {
 	// 投票的权重，如果帖子发布时间超过一周，则权重为0.5（减半）
 	weight := 1.0
 
-	//1.判断投票限制
+	//判断投票限制
 	//利用redis获取帖子发布时间
 	//ZScore函数的两个参数：键名和成员名，获取该成员的分数score
 	//Val将结果转换为float64类型
@@ -43,7 +43,7 @@ func VoteForPost(userID, postID string, direction float64) error {
 		weight = 0.5
 	}
 
-	//2.更新帖子分数
+	//更新帖子分数
 	//查询当前用户(userID)给当前帖子(postID)的投票记录
 	ov := client.ZScore(getRedisKey(KeyPostVotedZSetPF+postID), userID).Val() // 上次投票类型：1 or 0 or -1
 	diff := direction - ov                                                    //计算两次投票类型的差值
@@ -54,11 +54,21 @@ func VoteForPost(userID, postID string, direction float64) error {
 	//给指定的键和成员名增加分数
 	pipeline.ZIncrBy(getRedisKey(KeyPostScoreZSet), diff*constants.ScorePerVote*weight, postID)
 
-	//3.更新用户为该帖子投票的数据
+	//更新用户为该帖子投票的数据
 	pipeline.ZAdd(getRedisKey(KeyPostVotedZSetPF+postID), redis.Z{
 		Score:  direction, //投票类型
 		Member: userID,
 	})
+
+	//更新用户的点赞记录
+	if direction == 1 {
+		pipeline.ZAdd(getRedisKey(KeyUserLikedPostsZSetPF)+userID, redis.Z{
+			Score:  float64(time.Now().Unix()),
+			Member: postID,
+		})
+	} else {
+		pipeline.ZRem(getRedisKey(KeyUserLikedPostsZSetPF)+userID, postID)
+	}
 
 	//执行事务
 	_, err := pipeline.Exec()
@@ -66,11 +76,11 @@ func VoteForPost(userID, postID string, direction float64) error {
 }
 
 // 为评论投票
-func VoteForComment(userID string, commentID string, postID string, direction float64, firstLevel bool) error {
+func VoteForComment(userID, commentID, postID string, direction float64, firstLevel bool) error {
 	// 投票的权重，如果一级评论发布时间超过一周，则权重为0.5（减半）
 	weight := 1.0
 
-	//1.判断投票限制
+	//判断投票限制
 	//利用redis获取帖子发布时间
 	//ZScore函数的两个参数：键名和成员名，获取该成员的分数score
 	//Val将结果转换为float64类型
@@ -81,7 +91,7 @@ func VoteForComment(userID string, commentID string, postID string, direction fl
 		weight = 0.5
 	}
 
-	//2.更新一级评论分数
+	//更新一级评论分数
 	//查询当前用户(userID)给当前一级评论的投票记录
 	ov := client.ZScore(getRedisKey(KeyCommentVotedZSetPF+commentID), userID).Val() // 上次投票类型：1 or 0 or -1
 	diff := direction - ov                                                          //计算两次投票类型的差值
@@ -94,7 +104,7 @@ func VoteForComment(userID string, commentID string, postID string, direction fl
 		pipeline.ZIncrBy(getRedisKey(KeyCommentScoreZSetPF+postID), diff*constants.ScorePerVote*weight, commentID)
 	}
 
-	//3.更新用户为该帖子投票的数据
+	//更新用户为该评论投票的数据
 	pipeline.ZAdd(getRedisKey(KeyCommentVotedZSetPF+commentID), redis.Z{
 		Score:  direction, //投票类型
 		Member: userID,

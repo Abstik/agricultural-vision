@@ -45,10 +45,6 @@ func GetPostById(pid int64) (*entity.Post, error) {
 func GetPostListByIDs(ids []string) ([]*entity.Post, error) {
 	var posts []*entity.Post
 
-	if len(ids) == 0 {
-		return posts, nil
-	}
-
 	//order by FIND_IN_SET(post_id, ?) 表示根据 post_id 在另一个给定字符串列表中的位置进行排序。
 	//? 是另一个占位符，将被替换为一个包含多个ID的字符串，例如 "1,3,2"。
 	result := DB.
@@ -57,4 +53,25 @@ func GetPostListByIDs(ids []string) ([]*entity.Post, error) {
 		Find(&posts)
 
 	return posts, result.Error
+}
+
+// 根据userID，分页获取用户发布的帖子列表
+func GetPostListByUserID(userID, page, size int64) ([]*entity.Post, error) {
+	var posts []*entity.Post
+
+	// 计算偏移量
+	offset := (page - 1) * size
+
+	// 查询二级评论（parent_id 为 commentID）
+	result := DB.
+		Where("author_id = ?", userID).
+		Order("created_at DESC"). // 默认按时间倒序排序
+		Limit(int(size)).
+		Offset(int(offset)).
+		Find(&posts)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return posts, nil
 }

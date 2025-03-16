@@ -6,7 +6,6 @@ import (
 
 	"agricultural_vision/constants"
 	"agricultural_vision/models/entity"
-	"agricultural_vision/models/request"
 )
 
 // 创建评论
@@ -48,7 +47,8 @@ func GetParentIDAndPostIDByCommentID(commentID int64) (*int64, *int64, error) {
 	}
 
 	// 查询父评论ID和帖子ID
-	err := DB.Model(&entity.Comment{}).Select("parent_id", "post_id").
+	err := DB.Model(&entity.Comment{}).
+		Select("parent_id", "post_id").
 		Where("id = ?", commentID).
 		Scan(&result).Error
 	if err != nil {
@@ -62,10 +62,6 @@ func GetParentIDAndPostIDByCommentID(commentID int64) (*int64, *int64, error) {
 func GetCommentListByIDs(ids []string) ([]*entity.Comment, error) {
 	var comments []*entity.Comment
 
-	if len(ids) == 0 {
-		return comments, nil
-	}
-
 	//order by FIND_IN_SET(post_id, ?) 表示根据 post_id 在另一个给定字符串列表中的位置进行排序。
 	//? 是另一个占位符，将被替换为一个包含多个ID的字符串，例如 "1,3,2"。
 	result := DB.
@@ -77,17 +73,17 @@ func GetCommentListByIDs(ids []string) ([]*entity.Comment, error) {
 }
 
 // 分页查询二级评论
-func GetSecondLevelCommentList(commentID int64, request *request.ListRequest) ([]*entity.Comment, error) {
+func GetSecondLevelCommentList(commentID, page, size int64) ([]*entity.Comment, error) {
 	var comments []*entity.Comment
 
 	// 计算偏移量
-	offset := (request.Page - 1) * request.Size
+	offset := (page - 1) * size
 
 	// 查询二级评论（parent_id 为 commentID）
 	result := DB.
 		Where("parent_id = ?", commentID).
 		Order("created_at DESC"). // 默认按时间倒序排序
-		Limit(int(request.Size)).
+		Limit(int(size)).
 		Offset(int(offset)).
 		Find(&comments)
 

@@ -184,3 +184,19 @@ func GetCommunityPostIDsInOrder(p *request.ListRequest, communityID int64) (ids 
 	//查询指定索引范围的id列表
 	return getIDsFormKey(key, p.Page, p.Size)
 }
+
+// 根据用户id查询用户点赞过的帖子id列表
+func GetUserLikeIDsInOrder(userID, page, size int64) ([]string, error) {
+	//从redis中获取id
+	//1.根据用户请求中携带的order参数（排序方式）确定要查询的redis key
+	key := getRedisKey(KeyUserLikedPostsZSetPF) + strconv.Itoa(int(userID))
+
+	//2.确定查询的索引起始点
+	start := (page - 1) * size
+	end := start + size - 1
+
+	//3.ZREVRANGE 按分数从大到小查询指定数量的元素
+	result, err := client.ZRevRange(key, start, end).Result()
+
+	return result, err
+}
