@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"path/filepath"
 	"time"
@@ -207,7 +208,9 @@ func UpdateUserAvatarHandler(c *gin.Context) {
 		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
 		return
 	}
-	defer file.Close()
+	defer func(file multipart.File) {
+		_ = file.Close()
+	}(file)
 
 	// 限制文件大小（5MB）
 	if header.Size > 5*1024*1024 {

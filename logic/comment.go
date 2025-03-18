@@ -99,7 +99,7 @@ func DeleteComment(commentID int64, userID int64) error {
 }
 
 // 查询单个帖子的一级评论
-func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest) (commentListResponse *response.CommentListResponse, err error) {
+func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest, userID int64) (commentListResponse *response.CommentListResponse, err error) {
 	commentListResponse = &response.CommentListResponse{
 		Data: []*response.CommentResponse{},
 	}
@@ -133,8 +133,15 @@ func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest) (c
 	for idx, comment := range comments {
 		//查询作者简略信息
 		userBriefInfo, err := mysql.GetUserBriefInfo(comment.AuthorID)
-		if err != nil {
+		if err != nil { // 遇到错误不返回，继续执行后续逻辑
 			zap.L().Error("查询作者信息失败", zap.Error(err))
+			continue
+		}
+
+		//查询当前用户是否点赞了此评论
+		liked, err := redis.IsUserLikedComment(strconv.Itoa(int(userID)), strconv.Itoa(int(comment.ID)))
+		if err != nil { // 遇到错误不返回，继续执行后续逻辑
+			zap.L().Error("查询用户是否点赞失败", zap.Error(err))
 			continue
 		}
 
@@ -143,6 +150,7 @@ func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest) (c
 			ID:           comment.ID,
 			Content:      comment.Content,
 			LikeCount:    voteData[idx],
+			Liked:        liked,
 			RepliesCount: int64(commentNum[idx]),
 			Author:       *userBriefInfo,
 			CreatedAt:    comment.CreatedAt.Format("2006-01-02 15:04:05"),
@@ -154,7 +162,7 @@ func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest) (c
 }
 
 // 查询单个一级评论的二级评论
-func GetSecondLevelCommentList(commentID int64, listRequest *request.ListRequest) (commentListResponse *response.CommentListResponse, err error) {
+func GetSecondLevelCommentList(commentID int64, listRequest *request.ListRequest, userID int64) (commentListResponse *response.CommentListResponse, err error) {
 	commentListResponse = &response.CommentListResponse{
 		Data: []*response.CommentResponse{},
 	}
@@ -164,14 +172,15 @@ func GetSecondLevelCommentList(commentID int64, listRequest *request.ListRequest
 	if err != nil {
 		return
 	}
-	commentListResponse.Total = int64(len(comments))
-	if commentListResponse.Total == 0 {
+	commentListResponse.Total = total
+	if len(comments) == 0 {
 		return
 	}
 
-	commentIDs := make([]string, commentListResponse.Total)
+	// 将二级评论的ID提取出来
+	commentIDs := make([]string, 0, len(comments)) // 预分配容量，但长度为 0
 	for _, comment := range comments {
-		commentIDs = append(commentIDs, strconv.FormatInt(comment.ID, 10)) // 提取每个二级评论的 ID
+		commentIDs = append(commentIDs, strconv.FormatInt(comment.ID, 10))
 	}
 
 	// 查询所有二级评论的赞成票数——切片
@@ -180,7 +189,7 @@ func GetSecondLevelCommentList(commentID int64, listRequest *request.ListRequest
 		return
 	}
 
-	//将帖子作者及分区信息查询出来填充到帖子中
+	// 将帖子作者及分区信息查询出来填充到帖子中
 	for idx, comment := range comments {
 		//查询作者简略信息
 		userBriefInfo, err := mysql.GetUserBriefInfo(comment.AuthorID)
@@ -189,17 +198,24 @@ func GetSecondLevelCommentList(commentID int64, listRequest *request.ListRequest
 			continue
 		}
 
+		//查询当前用户是否点赞了此评论
+		liked, err := redis.IsUserLikedComment(strconv.Itoa(int(userID)), strconv.Itoa(int(comment.ID)))
+		if err != nil {
+			zap.L().Error("查询用户是否点赞失败", zap.Error(err))
+			continue
+		}
+
 		//封装查询到的信息
 		commentResponse := &response.CommentResponse{
 			ID:        comment.ID,
 			Content:   comment.Content,
 			LikeCount: voteData[idx],
+			Liked:     liked,
 			Author:    *userBriefInfo,
 			CreatedAt: comment.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 
 		commentListResponse.Data = append(commentListResponse.Data, commentResponse)
 	}
-	commentListResponse.Total = total
 	return
 }

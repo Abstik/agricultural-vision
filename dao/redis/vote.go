@@ -107,7 +107,20 @@ func VoteForComment(userID, commentID, postID string, direction float64, firstLe
 		Member: userID,
 	})
 
+	//更新用户点过赞的评论集合
+	pipeline.SAdd(getRedisKey(KeyUserLikedCommentsSetPF)+userID, commentID)
+
 	//执行事务
 	_, err := pipeline.Exec()
 	return err
+}
+
+// 查询用户是否点赞过该帖子
+func IsUserLikedPost(userID string, postID string) (bool, error) {
+	return client.SIsMember(getRedisKey(KeyUserLikedPostsSetPF+userID), postID).Result()
+}
+
+// 查询用户是否点赞过该评论
+func IsUserLikedComment(userID string, commentID string) (bool, error) {
+	return client.SIsMember(getRedisKey(KeyUserLikedCommentsSetPF+userID), commentID).Result()
 }

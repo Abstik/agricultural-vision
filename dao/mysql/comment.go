@@ -83,6 +83,7 @@ func GetSecondLevelCommentList(commentID, page, size int64) ([]*entity.Comment, 
 	var comments []*entity.Comment
 	var total int64
 
+	// 查询总数
 	if err := DB.Model(&entity.Comment{}).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}

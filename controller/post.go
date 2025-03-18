@@ -95,8 +95,16 @@ func GetPostListHandler(c *gin.Context) {
 		return
 	}
 
+	// 获取userID
+	userID, err := middleware.GetCurrentUserID(c)
+	if err != nil {
+		zap.L().Error("获取userID失败", zap.Error(err))
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
+
 	//获取数据
-	data, err := logic.GetPostList(p)
+	data, err := logic.GetPostList(p, userID)
 	if err != nil {
 		zap.L().Error("指定顺序查询帖子列表失败", zap.Error(err))
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
@@ -125,8 +133,16 @@ func GetCommunityPostListHandler(c *gin.Context) {
 		return
 	}
 
+	// 获取userID
+	userID, err := middleware.GetCurrentUserID(c)
+	if err != nil {
+		zap.L().Error("获取userID失败", zap.Error(err))
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
+
 	//根据社区查询该社区分类下的帖子列表
-	data, err := logic.GetCommunityPostList(p, communityID)
+	data, err := logic.GetCommunityPostList(p, communityID, userID)
 	if err != nil {
 		zap.L().Error("根据社区查询帖子列表失败", zap.Error(err))
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)

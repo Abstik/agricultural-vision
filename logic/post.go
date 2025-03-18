@@ -32,13 +32,13 @@ func CreatePost(createPostRequest *request.CreatePostRequest, authorID int64) (p
 
 	//查询作者简略信息
 	userBriefInfo, err := mysql.GetUserBriefInfo(post.AuthorID)
-	if err != nil {
+	if err != nil { // 遇到错误不返回，继续执行后续逻辑
 		zap.L().Error("查询作者信息失败", zap.Error(err))
 	}
 
 	//查询社区详情
 	community, err := mysql.GetCommunityById(post.CommunityID)
-	if err != nil {
+	if err != nil { // 遇到错误不返回，继续执行后续逻辑
 		zap.L().Error("查询社区详情失败", zap.Error(err))
 	}
 
@@ -87,7 +87,7 @@ func DeletePost(postID int64, userID int64) error {
 }
 
 // 根据id列表查询帖子列表，并封装响应数据
-func GetPostListByIDs(ids []string) (postResponses []*response.PostResponse, err error) {
+func GetPostListByIDs(ids []string, userId int64) (postResponses []*response.PostResponse, err error) {
 	//调用此函数前，已经对ids进行判断，不为空
 
 	//根据id列表去数据库查询帖子详细信息
@@ -114,15 +114,22 @@ func GetPostListByIDs(ids []string) (postResponses []*response.PostResponse, err
 	for idx, post := range posts {
 		//查询作者简略信息
 		userBriefInfo, err := mysql.GetUserBriefInfo(post.AuthorID)
-		if err != nil {
+		if err != nil { // 遇到错误不返回，继续执行后续逻辑
 			zap.L().Error("查询作者信息失败", zap.Error(err))
 			continue
 		}
 
 		//查询社区详情
 		community, err := mysql.GetCommunityById(post.CommunityID)
-		if err != nil {
+		if err != nil { // 遇到错误不返回，继续执行后续逻辑
 			zap.L().Error("查询社区详情失败", zap.Error(err))
+			continue
+		}
+
+		//查询当前用户是否点赞了此帖子
+		liked, err := redis.IsUserLikedPost(strconv.Itoa(int(userId)), strconv.Itoa(int(post.ID)))
+		if err != nil { // 遇到错误不返回，继续执行后续逻辑
+			zap.L().Error("查询用户是否点赞失败", zap.Error(err))
 			continue
 		}
 
@@ -133,6 +140,7 @@ func GetPostListByIDs(ids []string) (postResponses []*response.PostResponse, err
 			Image:        post.Image,
 			Author:       *userBriefInfo,
 			LikeCount:    voteData[idx],
+			Liked:        liked,
 			CommentCount: int64(commentNum[idx]),
 			CreatedAt:    post.CreatedAt.Format("2006-01-02 15:04:05"),
 			Community:    response.CommunityBriefResponse{ID: community.ID, CommunityName: community.CommunityName},
@@ -144,7 +152,7 @@ func GetPostListByIDs(ids []string) (postResponses []*response.PostResponse, err
 }
 
 // 查询帖子列表，并按照指定方式排序
-func GetPostList(p *request.ListRequest) (postListResponse *response.PostListResponse, err error) {
+func GetPostList(p *request.ListRequest, userID int64) (postListResponse *response.PostListResponse, err error) {
 	postListResponse = &response.PostListResponse{
 		Data: []*response.PostResponse{},
 	}
@@ -160,12 +168,12 @@ func GetPostList(p *request.ListRequest) (postListResponse *response.PostListRes
 	}
 
 	// 根据id列表查询帖子列表，并封装响应数据
-	postListResponse.Data, err = GetPostListByIDs(ids)
+	postListResponse.Data, err = GetPostListByIDs(ids, userID)
 	return
 }
 
 // 查询该社区下的帖子列表，并按指定方式排序
-func GetCommunityPostList(listRequest *request.ListRequest, communityID int64) (postListResponse *response.PostListResponse, err error) {
+func GetCommunityPostList(listRequest *request.ListRequest, communityID int64, userID int64) (postListResponse *response.PostListResponse, err error) {
 	postListResponse = &response.PostListResponse{
 		Data: []*response.PostResponse{},
 	}
@@ -181,7 +189,7 @@ func GetCommunityPostList(listRequest *request.ListRequest, communityID int64) (
 	}
 
 	// 根据id列表查询帖子列表，并封装响应数据
-	postListResponse.Data, err = GetPostListByIDs(ids)
+	postListResponse.Data, err = GetPostListByIDs(ids, userID)
 	return
 }
 
@@ -196,6 +204,7 @@ func GetUserPostList(userID int64, listRequest *request.ListRequest) (postListRe
 	if err != nil {
 		return
 	}
+	postListResponse.Total = total
 	if len(posts) == 0 {
 		return
 	}
@@ -207,8 +216,7 @@ func GetUserPostList(userID int64, listRequest *request.ListRequest) (postListRe
 	}
 
 	// 根据id列表查询帖子列表，并封装响应数据
-	postListResponse.Data, err = GetPostListByIDs(ids)
-	postListResponse.Total = total
+	postListResponse.Data, err = GetPostListByIDs(ids, userID)
 	return
 }
 
@@ -229,6 +237,6 @@ func GetUserLikedPostList(userID int64, listRequest *request.ListRequest) (postL
 	}
 
 	// 根据id列表查询帖子列表，并封装响应数据
-	postListResponse.Data, err = GetPostListByIDs(ids)
+	postListResponse.Data, err = GetPostListByIDs(ids, userID)
 	return
 }

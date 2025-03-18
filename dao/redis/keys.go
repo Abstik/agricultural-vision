@@ -20,7 +20,8 @@ const (
 	KeyCommentVotedZSetPF = "comment:voted:" // zset; key=comment:voted:{commentID}, 成员=userID, 分数=1(点赞) / -1(踩)
 
 	// 用户点赞相关
-	KeyUserLikedPostsSetPF = "user_liked:posts:" // set; key=post:voted:{userID}, 成员=postID
+	KeyUserLikedPostsSetPF    = "user_liked:posts:"    // set; key=post:voted:{userID}, 成员=postID
+	KeyUserLikedCommentsSetPF = "user_liked:comments:" // set; key=post:voted:{userID}, 成员=commentID
 )
 
 func getRedisKey(key string) string {

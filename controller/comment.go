@@ -103,8 +103,16 @@ func GetFirstLevelCommentListHandler(c *gin.Context) {
 		return
 	}
 
+	// 获取userID
+	userID, err := middleware.GetCurrentUserID(c)
+	if err != nil {
+		zap.L().Error("获取userID失败", zap.Error(err))
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
+
 	// 查询一级评论
-	commentListResponse, err := logic.GetFirstLevelCommentList(postID, listRequest)
+	commentListResponse, err := logic.GetFirstLevelCommentList(postID, listRequest, userID)
 	if err != nil {
 		zap.L().Error("查询一级评论失败", zap.Error(err))
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
@@ -131,7 +139,15 @@ func GetSecondLevelCommentListHandler(c *gin.Context) {
 		return
 	}
 
-	commentListResponse, err := logic.GetSecondLevelCommentList(commentID, listRequest)
+	// 获取userID
+	userID, err := middleware.GetCurrentUserID(c)
+	if err != nil {
+		zap.L().Error("获取userID失败", zap.Error(err))
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
+
+	commentListResponse, err := logic.GetSecondLevelCommentList(commentID, listRequest, userID)
 	if err != nil {
 		zap.L().Error("查询二级评论失败", zap.Error(err))
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
