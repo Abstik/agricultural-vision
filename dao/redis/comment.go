@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"errors"
 	"strconv"
 	"time"
 
@@ -32,7 +33,7 @@ func CreateFirstLevelComment(commentID, postID int64) error {
 	//在redis中更新评论数（累计+1）
 	pipeline.ZIncrBy(getRedisKey(KeyPostCommentNumZSet), 1, postIDStr)
 
-	//初始化子评论数为0
+	//初始化二级评论数为0
 	pipeline.ZAdd(getRedisKey(KeyCommentNumZSet), redis.Z{
 		Score:  0,
 		Member: commentID,
@@ -46,18 +47,14 @@ func CreateFirstLevelComment(commentID, postID int64) error {
 func CreateSecondLevelComment(parentID int64) error {
 	parentIDStr := strconv.FormatInt(parentID, 10)
 
-	//开启事务
-	pipeline := client.TxPipeline()
-
 	//在redis中更新子评论数（累计+1）
-	pipeline.ZIncrBy(getRedisKey(KeyCommentNumZSet), 1, parentIDStr)
+	err := client.ZIncrBy(getRedisKey(KeyCommentNumZSet), 1, parentIDStr).Err()
 
-	_, err := pipeline.Exec()
 	return err
 }
 
 // 删除评论
-func DeleteComment(commentID, parentID, postID int64) error {
+func DeleteComment(commentID, postID int64, parentID *int64) error {
 	pipeline := client.TxPipeline()
 
 	postIDStr := strconv.FormatInt(postID, 10)
@@ -76,11 +73,11 @@ func DeleteComment(commentID, parentID, postID int64) error {
 	pipeline.ZRem(getRedisKey(KeyCommentNumZSet), commentID)
 
 	// 5. 如果是一级评论，减少帖子总评论数
-	if parentID == 0 {
+	if parentID == nil {
 		pipeline.ZIncrBy(getRedisKey(KeyPostCommentNumZSet), -1, postIDStr)
 	} else {
 		// 6. 如果是二级评论，减少父评论的子评论数
-		parentIDStr := strconv.FormatInt(parentID, 10)
+		parentIDStr := strconv.FormatInt(*parentID, 10)
 		pipeline.ZIncrBy(getRedisKey(KeyCommentNumZSet), -1, parentIDStr)
 	}
 
@@ -90,7 +87,7 @@ func DeleteComment(commentID, parentID, postID int64) error {
 }
 
 // 根据排序方式和索引范围，查询评论id列表
-func GetCommentIDsInOrder(p *request.ListRequest, postID int64) ([]string, error) {
+func GetCommentIDsInOrder(p *request.ListRequest, postID int64) ([]string, int64, error) {
 	//从redis中获取id
 	//1.根据用户请求中携带的order参数（排序方式）确定要查询的redis key
 	key := getRedisKey(KeyCommentTimeZSetPF + strconv.Itoa(int(postID)))
@@ -98,14 +95,7 @@ func GetCommentIDsInOrder(p *request.ListRequest, postID int64) ([]string, error
 		key = getRedisKey(KeyCommentScoreZSetPF) + strconv.Itoa(int(postID))
 	}
 
-	//2.确定查询的索引起始点
-	start := (p.Page - 1) * p.Size
-	end := start + p.Size - 1
-
-	//3.ZREVRANGE 按分数从大到小查询指定数量的元素
-	result, err := client.ZRevRange(key, start, end).Result()
-
-	return result, err
+	return getIDsFormKey(key, p.Page, p.Size)
 }
 
 // 根据ids列表查询每条评论的赞成票数据
@@ -138,29 +128,33 @@ func GetCommentVoteDataByIDs(ids []string) (data []int64, err error) {
 }
 
 // 根据id列表查询帖子的一级评论数
-func GetCommentNumByIDs(ids []string) (nums []float64, err error) {
+func GetCommentNumByIDs(ids []string) ([]float64, error) {
 	// 使用 pipeline 批量执行 Redis 命令
 	pipeline := client.Pipeline()
 
-	// 创建一个切片用于保存所有 ZScore 命令
-	var cmds []redis.Cmder
+	// 用于存储命令
+	cmds := make([]*redis.FloatCmd, len(ids))
 
-	// 将所有 ZScore 命令添加到 pipeline 中
-	for _, id := range ids {
-		key := getRedisKey(KeyPostCommentNumZSet)     // 键名是 post:comment_num
-		cmds = append(cmds, pipeline.ZScore(key, id)) // 获取每个帖子的评论数
+	// 将所有 ZScore 命令添加到 pipeline
+	for i, id := range ids {
+		key := getRedisKey(KeyPostCommentNumZSet)
+		cmds[i] = pipeline.ZScore(key, id)
 	}
 
-	// 执行所有命令
-	_, err = pipeline.Exec()
-	if err != nil {
+	// 执行 pipeline
+	_, err := pipeline.Exec()
+	if err != nil && !errors.Is(err, redis.Nil) {
 		return nil, err
 	}
 
 	// 处理结果
-	for _, cmd := range cmds {
-		scoreCmd := cmd.(*redis.FloatCmd)   // 类型断言为 FloatCmd
-		nums = append(nums, scoreCmd.Val()) // 获取评论数
+	nums := make([]float64, len(ids))
+	for i, cmd := range cmds {
+		if err := cmd.Err(); errors.Is(err, redis.Nil) {
+			nums[i] = 0 // 特殊值表示未找到，避免误判 0
+		} else {
+			nums[i] = cmd.Val()
+		}
 	}
 
 	return nums, nil

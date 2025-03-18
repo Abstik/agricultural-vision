@@ -251,5 +251,5 @@ func UpdateUserAvatarHandler(c *gin.Context) {
 		return
 	}
 
-	ResponseSuccess(c, http.StatusOK)
+	ResponseSuccess(c, nil)
 }

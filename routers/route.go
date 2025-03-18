@@ -92,20 +92,20 @@ func SetupRouter(mode string) *gin.Engine {
 		// 发布评论
 		communityPost.POST("/comment", controller.CreateCommentHandler)
 		// 删除评论
-		communityPost.DELETE("/comment/:comment_id", controller.DeleteCommentHandler)
+		communityPost.DELETE("/comment/:id", controller.DeleteCommentHandler)
 		// 查询一级评论（指定排序方式，默认按时间倒序）
-		communityPost.GET("/comment/:post_id", controller.GetFirstLevelCommentListHandler)
+		communityPost.GET("/first-level-comment/:post_id", controller.GetFirstLevelCommentListHandler)
 		// 查询二级评论（无法排序）
-		communityPost.GET("/comment/:comment_id", controller.GetSecondLevelCommentListHandler)
+		communityPost.GET("/second-level-comment/:comment_id", controller.GetSecondLevelCommentListHandler)
 		// 评论投票
 		communityPost.POST("/comment/vote", controller.CommentVoteController)
 
-		userCommunityPost := r.Group("/user", middleware.JWTAuthMiddleware())
+		userCommunityPost := communityPost.Group("/user", middleware.JWTAuthMiddleware())
 		{
 			// 查询用户的帖子列表（分页）
 			userCommunityPost.GET("/posts", controller.GetUserPostListHandler)
 			// 查询用户点赞的帖子列表（分页）
-			userCommunityPost.GET("/likes", controller.GetUserLikePostListHandler)
+			userCommunityPost.GET("/likes", controller.GetUserLikedPostListHandler)
 
 		}
 

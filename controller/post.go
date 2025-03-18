@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -31,19 +32,20 @@ func CreatePostHandler(c *gin.Context) {
 	}
 
 	//2.创建帖子
-	if err := logic.CreatePost(p, userID); err != nil {
+	data, err := logic.CreatePost(p, userID)
+	if err != nil {
 		zap.L().Error("创建帖子失败", zap.Error(err))
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
 		return
 	}
 
 	//3.返回响应
-	ResponseSuccess(c, constants.CodeSuccess)
+	ResponseSuccess(c, data)
 }
 
 // 删除帖子
 func DeletePostHandler(c *gin.Context) {
-	postID := c.Param("post_id")
+	postID := c.Param("id")
 
 	postIDStr, err := strconv.ParseInt(postID, 10, 64)
 	if err != nil {
@@ -52,12 +54,26 @@ func DeletePostHandler(c *gin.Context) {
 		return
 	}
 
-	if err := logic.DeletePost(postIDStr); err != nil {
-		zap.L().Error("删除帖子失败", zap.Error(err))
+	//在请求上下文中获取userID
+	userID, err := middleware.GetCurrentUserID(c)
+	if err != nil {
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
 		return
 	}
-	ResponseSuccess(c, constants.CodeSuccess)
+
+	if err := logic.DeletePost(postIDStr, userID); err != nil {
+		zap.L().Error("删除帖子失败", zap.Error(err))
+		if errors.Is(err, constants.ErrorNoPermission) {
+			ResponseError(c, http.StatusForbidden, constants.CodeNoPermission)
+			return
+		} else if errors.Is(err, constants.ErrorNoPost) {
+			ResponseError(c, http.StatusBadRequest, constants.CodeNoPost)
+			return
+		}
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
+	ResponseSuccess(c, nil)
 }
 
 // 查询帖子列表
@@ -146,7 +162,7 @@ func GetUserPostListHandler(c *gin.Context) {
 }
 
 // 获取用户点赞帖子列表
-func GetUserLikePostListHandler(c *gin.Context) {
+func GetUserLikedPostListHandler(c *gin.Context) {
 	userID, err := middleware.GetCurrentUserID(c)
 	if err != nil {
 		zap.L().Error("获取userID失败", zap.Error(err))
@@ -161,7 +177,7 @@ func GetUserLikePostListHandler(c *gin.Context) {
 		return
 	}
 
-	data, err := logic.GetUserLikePostList(userID, listRequest)
+	data, err := logic.GetUserLikedPostList(userID, listRequest)
 	if err != nil {
 		zap.L().Error("获取用户点赞帖子列表失败", zap.Error(err))
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)

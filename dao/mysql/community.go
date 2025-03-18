@@ -1,6 +1,11 @@
 package mysql
 
 import (
+	"errors"
+
+	"gorm.io/gorm"
+
+	"agricultural_vision/constants"
 	"agricultural_vision/models/entity"
 	"agricultural_vision/models/response"
 )
@@ -9,16 +14,15 @@ import (
 func GetCommunityList() ([]*response.CommunityBriefResponse, error) {
 	var communities []*response.CommunityBriefResponse
 
-	result := DB.Model(&response.CommunityResponse{}).
-		Select("community_id", "community_name").
+	result := DB.Model(&entity.Community{}).
+		Select("id", "community_name").
 		Order("created_at DESC"). // 根据创建时间倒序排序
 		Find(&communities)
 
-	/*// 如果未查询到结果
-	// 处理空结果集
+	// 如果未查询到结果
 	if result.RowsAffected == 0 {
-		return nil, models.ErrorNoResult
-	}*/
+		return nil, constants.ErrorNoResult
+	}
 
 	return communities, result.Error
 }
@@ -27,12 +31,12 @@ func GetCommunityList() ([]*response.CommunityBriefResponse, error) {
 func GetCommunityById(id int64) (*entity.Community, error) {
 	var community entity.Community
 
-	result := DB.Where("community_id = ?", id).First(&community)
+	result := DB.First(&community, id)
 
-	/*// 如果未查询到结果
+	// 如果未查询到结果
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, models.ErrorNoResult
-	}*/
+		return nil, constants.ErrorNoResult
+	}
 
 	return &community, result.Error
 }

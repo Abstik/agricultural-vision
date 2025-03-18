@@ -2,7 +2,7 @@ package redis
 
 // redis key 注意使用命名空间
 const (
-	Prefix = "agricultural_vision" // 项目 key 前缀
+	Prefix = "agricultural_vision:" // 项目 key 前缀
 
 	// 帖子相关
 	KeyPostTimeZSet    = "post:time"   // zset; key=post:time, 成员=postID, 分数=发帖时间
@@ -20,7 +20,7 @@ const (
 	KeyCommentVotedZSetPF = "comment:voted:" // zset; key=comment:voted:{commentID}, 成员=userID, 分数=1(点赞) / -1(踩)
 
 	// 用户点赞相关
-	KeyUserLikedPostsZSetPF = "user_liked:posts:" // set; key=post:voted:{userID}, 成员=postID
+	KeyUserLikedPostsSetPF = "user_liked:posts:" // set; key=post:voted:{userID}, 成员=postID
 )
 
 func getRedisKey(key string) string {

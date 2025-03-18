@@ -62,12 +62,9 @@ func VoteForPost(userID, postID string, direction float64) error {
 
 	//更新用户的点赞记录
 	if direction == 1 {
-		pipeline.ZAdd(getRedisKey(KeyUserLikedPostsZSetPF)+userID, redis.Z{
-			Score:  float64(time.Now().Unix()),
-			Member: postID,
-		})
+		pipeline.SAdd(getRedisKey(KeyUserLikedPostsSetPF)+userID, postID)
 	} else {
-		pipeline.ZRem(getRedisKey(KeyUserLikedPostsZSetPF)+userID, postID)
+		pipeline.SRem(getRedisKey(KeyUserLikedPostsSetPF)+userID, postID)
 	}
 
 	//执行事务

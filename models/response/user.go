@@ -12,7 +12,7 @@ type UserResponse struct {
 
 // 用户简略信息（帖子和评论中展示）
 type UserBriefResponse struct {
-	ID       int64  `json:"id" gorm:"column:id"`
-	Username string `json:"username" gorm:"column:username"` // 用户名
-	Avatar   string `json:"avatar" gorm:"column:avatar"`     // 头像
+	ID       int64  `json:"id"`
+	Username string `json:"username"` // 用户名
+	Avatar   string `json:"avatar"`   // 头像
 }

@@ -38,7 +38,7 @@ func DeleteComment(commentID int64) error {
 	return nil
 }
 
-// 根据评论ID获取父评论ID和帖子ID
+/*// 根据评论ID获取父评论ID和帖子ID
 func GetParentIDAndPostIDByCommentID(commentID int64) (*int64, *int64, error) {
 	// 定义一个结构体来接收查询结果
 	var result struct {
@@ -56,16 +56,22 @@ func GetParentIDAndPostIDByCommentID(commentID int64) (*int64, *int64, error) {
 	}
 
 	return result.ParentID, result.PostID, nil
-}
+}*/
 
 // 根据评论ID列表获取评论列表（一级评论适用）
 func GetCommentListByIDs(ids []string) ([]*entity.Comment, error) {
 	var comments []*entity.Comment
 
+	// 将 []string 转换为 []interface{}，gorm 会自动处理类型匹配
+	var idsInterface []interface{}
+	for _, id := range ids {
+		idsInterface = append(idsInterface, id)
+	}
+
 	//order by FIND_IN_SET(post_id, ?) 表示根据 post_id 在另一个给定字符串列表中的位置进行排序。
 	//? 是另一个占位符，将被替换为一个包含多个ID的字符串，例如 "1,3,2"。
 	result := DB.
-		Where("id IN ?", ids).
+		Where("id IN ?", idsInterface).
 		Order(fmt.Sprintf("FIELD(id, %s)", strings.Join(ids, ","))).
 		Find(&comments)
 
@@ -73,8 +79,13 @@ func GetCommentListByIDs(ids []string) ([]*entity.Comment, error) {
 }
 
 // 分页查询二级评论
-func GetSecondLevelCommentList(commentID, page, size int64) ([]*entity.Comment, error) {
+func GetSecondLevelCommentList(commentID, page, size int64) ([]*entity.Comment, int64, error) {
 	var comments []*entity.Comment
+	var total int64
+
+	if err := DB.Model(&entity.Comment{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 
 	// 计算偏移量
 	offset := (page - 1) * size
@@ -88,7 +99,7 @@ func GetSecondLevelCommentList(commentID, page, size int64) ([]*entity.Comment, 
 		Find(&comments)
 
 	if result.Error != nil {
-		return nil, result.Error
+		return nil, 0, result.Error
 	}
-	return comments, nil
+	return comments, total, nil
 }

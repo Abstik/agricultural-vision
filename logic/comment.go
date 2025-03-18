@@ -1,10 +1,13 @@
 package logic
 
 import (
+	"errors"
 	"strconv"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 
+	"agricultural_vision/constants"
 	"agricultural_vision/dao/mysql"
 	"agricultural_vision/dao/redis"
 	"agricultural_vision/models/entity"
@@ -12,9 +15,18 @@ import (
 	"agricultural_vision/models/response"
 )
 
-// 创建一级评论
-func CreateComment(createCommentRequest *request.CreateCommentRequest, userID int64) error {
-	// 1.在mysql中创建评论
+// 创建评论
+func CreateComment(createCommentRequest *request.CreateCommentRequest, userID int64) (*response.CommentResponse, error) {
+	// 在mysql中查询postID是否存在
+	_, err := mysql.GetPostById(createCommentRequest.PostID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) { // 如果查询不到帖子
+			return nil, constants.ErrorNoPost
+		}
+		return nil, err
+	}
+
+	// 在mysql中创建评论
 	comment := &entity.Comment{
 		Content:  createCommentRequest.Content,
 		ParentID: createCommentRequest.ParentID,
@@ -23,28 +35,55 @@ func CreateComment(createCommentRequest *request.CreateCommentRequest, userID in
 		PostID:   createCommentRequest.PostID,
 	}
 
-	if err := mysql.CreateComment(comment); err != nil {
-		return err
+	err = mysql.CreateComment(comment)
+	if err != nil {
+		return nil, err
 	}
 
-	// 2.在redis中创建评论
+	// 查询作者信息
+	author, err := mysql.GetUserBriefInfo(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 构造返回值
+	commentResponse := &response.CommentResponse{
+		ID:        comment.ID,
+		Content:   comment.Content,
+		Author:    *author,
+		CreatedAt: comment.CreatedAt.Format("2006-01-02 15:04:05"),
+	}
+
+	// 在redis中创建评论
 	if createCommentRequest.ParentID == nil {
 		// 在redis中创建一级评论
-		err := redis.CreateFirstLevelComment(comment.ID, comment.PostID)
-		return err
+		err = redis.CreateFirstLevelComment(comment.ID, comment.PostID)
 	} else {
 		// 在redis中创建二级评论
-		err := redis.CreateSecondLevelComment(*comment.ParentID)
-		return err
+		err = redis.CreateSecondLevelComment(*createCommentRequest.ParentID)
 	}
+	if err != nil {
+		return nil, err
+	}
+
+	return commentResponse, nil
 }
 
 // 删除评论
-func DeleteComment(commentID int64) error {
-	// 从mysql中查找parentID和postID
-	parentID, postID, err := mysql.GetParentIDAndPostIDByCommentID(commentID)
+func DeleteComment(commentID int64, userID int64) error {
+	// 先从mysql中查找评论
+	ids := []string{strconv.Itoa(int(commentID))}
+	comment, err := mysql.GetCommentListByIDs(ids)
 	if err != nil {
 		return err
+	}
+	if len(comment) == 0 { // 如果未找到此评论
+		return constants.ErrorNoComment
+	}
+
+	// 校验userID
+	if comment[0].AuthorID != userID {
+		return constants.ErrorNoPermission
 	}
 
 	// 在mysql中删除评论
@@ -53,10 +92,9 @@ func DeleteComment(commentID int64) error {
 	}
 
 	// 在redis中删除评论
-	if err := redis.DeleteComment(commentID, *parentID, *postID); err != nil {
+	if err := redis.DeleteComment(commentID, comment[0].PostID, comment[0].ParentID); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -67,12 +105,12 @@ func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest) (c
 	}
 
 	//从redis中，根据指定的排序方式和查询数量，查询符合条件的id列表
-	ids, err := redis.GetCommentIDsInOrder(listRequest, postID)
+	ids, total, err := redis.GetCommentIDsInOrder(listRequest, postID)
 	if err != nil {
 		return
 	}
-	commentListResponse.Total = int64(len(ids))
-	if commentListResponse.Total == 0 {
+	commentListResponse.Total = total
+	if len(ids) == 0 {
 		return
 	}
 
@@ -122,7 +160,7 @@ func GetSecondLevelCommentList(commentID int64, listRequest *request.ListRequest
 	}
 
 	// 从mysql中查询二级评论
-	comments, err := mysql.GetSecondLevelCommentList(commentID, listRequest.Page, listRequest.Size)
+	comments, total, err := mysql.GetSecondLevelCommentList(commentID, listRequest.Page, listRequest.Size)
 	if err != nil {
 		return
 	}
@@ -162,5 +200,6 @@ func GetSecondLevelCommentList(commentID int64, listRequest *request.ListRequest
 
 		commentListResponse.Data = append(commentListResponse.Data, commentResponse)
 	}
+	commentListResponse.Total = total
 	return
 }

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +14,7 @@ import (
 	"agricultural_vision/models/request"
 )
 
-// 投票功能
+// 帖子投票
 func PostVoteController(c *gin.Context) {
 	p := new(request.VoteRequest)
 	//参数校验
@@ -40,11 +41,43 @@ func PostVoteController(c *gin.Context) {
 	err = logic.VoteForPost(userID, p)
 	if err != nil {
 		zap.L().Error("投票失败", zap.Error(err))
+		if errors.Is(err, constants.ErrorNoPost) {
+			ResponseError(c, http.StatusBadRequest, constants.CodeNoPost)
+			return
+		}
 		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
 		return
 	}
 
 	//返回响应
 	ResponseSuccess(c, nil)
-	return
+}
+
+// 评论投票
+func CommentVoteController(c *gin.Context) {
+	votePostRequest := new(request.VoteRequest)
+	err := c.ShouldBindJSON(votePostRequest)
+	if err != nil {
+		zap.L().Error("参数不正确", zap.Error(err))
+		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
+	}
+
+	userID, err := middleware.GetCurrentUserID(c)
+	if err != nil {
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
+
+	err = logic.CommentVote(userID, votePostRequest)
+	if err != nil {
+		zap.L().Error("评论投票失败", zap.Error(err))
+		if errors.Is(err, constants.ErrorNoComment) {
+			ResponseError(c, http.StatusBadRequest, constants.CodeNoComment)
+			return
+		}
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
+
+	ResponseSuccess(c, nil)
 }

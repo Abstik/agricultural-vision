@@ -37,7 +37,7 @@ func DeletePost(id int64) error {
 // 根据帖子id查询帖子详情
 func GetPostById(pid int64) (*entity.Post, error) {
 	var post *entity.Post
-	result := DB.Where("post_id = ?", pid).First(&post)
+	result := DB.Where("id = ?", pid).First(&post)
 	return post, result.Error
 }
 
@@ -45,10 +45,16 @@ func GetPostById(pid int64) (*entity.Post, error) {
 func GetPostListByIDs(ids []string) ([]*entity.Post, error) {
 	var posts []*entity.Post
 
+	// 将 []string 转换为 []interface{}，gorm 会自动处理类型匹配
+	var idsInterface []interface{}
+	for _, id := range ids {
+		idsInterface = append(idsInterface, id)
+	}
+
 	//order by FIND_IN_SET(post_id, ?) 表示根据 post_id 在另一个给定字符串列表中的位置进行排序。
 	//? 是另一个占位符，将被替换为一个包含多个ID的字符串，例如 "1,3,2"。
 	result := DB.
-		Where("id IN ?", ids).
+		Where("id IN ?", idsInterface).
 		Order(fmt.Sprintf("FIELD(id, %s)", strings.Join(ids, ","))).
 		Find(&posts)
 
@@ -56,8 +62,13 @@ func GetPostListByIDs(ids []string) ([]*entity.Post, error) {
 }
 
 // 根据userID，分页获取用户发布的帖子列表
-func GetPostListByUserID(userID, page, size int64) ([]*entity.Post, error) {
+func GetPostListByUserID(userID, page, size int64) ([]*entity.Post, int64, error) {
 	var posts []*entity.Post
+	var total int64
+
+	if err := DB.Model(&entity.Post{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 
 	// 计算偏移量
 	offset := (page - 1) * size
@@ -71,7 +82,7 @@ func GetPostListByUserID(userID, page, size int64) ([]*entity.Post, error) {
 		Find(&posts)
 
 	if result.Error != nil {
-		return nil, result.Error
+		return nil, 0, result.Error
 	}
-	return posts, nil
+	return posts, total, nil
 }

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -32,36 +33,55 @@ func CreateCommentHandler(c *gin.Context) {
 	}
 
 	// 创建评论
-	err = logic.CreateComment(createCommentRequest, id)
+	data, err := logic.CreateComment(createCommentRequest, id)
 	if err != nil {
 		zap.L().Error("创建评论失败", zap.Error(err))
+		if errors.Is(err, constants.ErrorNoPost) {
+			ResponseError(c, http.StatusBadRequest, constants.CodeNoPost)
+			return
+		}
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
 		return
 	}
 
-	ResponseSuccess(c, constants.CodeSuccess)
+	ResponseSuccess(c, data)
 }
 
 // 删除评论
 func DeleteCommentHandler(c *gin.Context) {
 	// 获取参数
-	commentIDStr := c.Param("comment_id")
-	commentID, err1 := strconv.ParseInt(commentIDStr, 10, 64)
-	if err1 != nil {
-		zap.L().Error("参数不正确", zap.Error(err1))
+	commentIDStr := c.Param("id")
+	commentID, err := strconv.ParseInt(commentIDStr, 10, 64)
+	if err != nil {
+		zap.L().Error("参数不正确", zap.Error(err))
 		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
 		return
 	}
 
-	// 删除帖子
-	err := logic.DeleteComment(commentID)
+	// 获取userID
+	userID, err := middleware.GetCurrentUserID(c)
 	if err != nil {
-		zap.L().Error("删除评论失败", zap.Error(err))
+		zap.L().Error("获取userID失败", zap.Error(err))
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
 		return
 	}
 
-	ResponseSuccess(c, constants.CodeSuccess)
+	// 删除评论
+	err = logic.DeleteComment(commentID, userID)
+	if err != nil {
+		zap.L().Error("删除评论失败", zap.Error(err))
+		if errors.Is(err, constants.ErrorNoComment) {
+			ResponseError(c, http.StatusBadRequest, constants.CodeNoComment)
+			return
+		} else if errors.Is(err, constants.ErrorNoPermission) {
+			ResponseError(c, http.StatusBadRequest, constants.CodeNoPermission)
+			return
+		}
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
+
+	ResponseSuccess(c, nil)
 }
 
 // 查询一级评论
@@ -118,29 +138,4 @@ func GetSecondLevelCommentListHandler(c *gin.Context) {
 		return
 	}
 	ResponseSuccess(c, commentListResponse)
-}
-
-// 评论投票
-func CommentVoteController(c *gin.Context) {
-	votePostRequest := new(request.VoteRequest)
-	err := c.ShouldBindJSON(votePostRequest)
-	if err != nil {
-		zap.L().Error("参数不正确", zap.Error(err))
-		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
-	}
-
-	userID, err := middleware.GetCurrentUserID(c)
-	if err != nil {
-		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
-		return
-	}
-
-	err = logic.CommentVote(userID, votePostRequest)
-	if err != nil {
-		zap.L().Error("评论投票失败", zap.Error(err))
-		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
-		return
-	}
-
-	ResponseSuccess(c, constants.CodeSuccess)
 }
