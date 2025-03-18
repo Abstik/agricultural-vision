@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"agricultural_vision/settings"
 	"errors"
 	"fmt"
 	"mime/multipart"
@@ -231,7 +232,7 @@ func UpdateUserAvatarHandler(c *gin.Context) {
 	newFileName := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
 
 	// 上传到 OSS
-	fileURL, err := alioss.UploadFile(file, newFileName)
+	fileURL, err := alioss.UploadFile(file, newFileName, settings.Conf.AliossConfig.UserAvatarPath)
 	if err != nil {
 		zap.L().Error("上传文件失败", zap.Error(err))
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)

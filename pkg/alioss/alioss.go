@@ -24,7 +24,7 @@ func InitServer() (*oss.Client, error) {
 }
 
 // 上传文件
-func UploadFile(file multipart.File, fileName string) (fileURL string, err error) {
+func UploadFile(file multipart.File, fileName, pathName string) (fileURL string, err error) {
 	client, err := InitServer()
 	if err != nil {
 		return
@@ -36,8 +36,8 @@ func UploadFile(file multipart.File, fileName string) (fileURL string, err error
 		return
 	}
 
-	// OSS 完整路径：upload_path + 文件名
-	objectName := settings.Conf.AliossConfig.UploadPath + fileName
+	// OSS 完整路径：path + 文件名
+	objectName := pathName + fileName
 
 	// 上传文件
 	err = bucket.PutObject(objectName, file)

@@ -54,6 +54,7 @@ type AiConfig struct {
 	SystemContent string `mapstructure:"system_content"`
 	ApiKey        string `mapstructure:"api_key"`
 	ApiUrl        string `mapstructure:"api_url"`
+	Model         string `mapstructure:"model"`
 }
 
 type AliossConfig struct {
@@ -61,7 +62,8 @@ type AliossConfig struct {
 	AccessKeyId     string `mapstructure:"access_key_id"`
 	AccessKeySecret string `mapstructure:"access_key_secret"`
 	BucketName      string `mapstructure:"bucket_name"`
-	UploadPath      string `mapstructure:"upload_path"`
+	UserAvatarPath  string `mapstructure:"user_avatar_path"`
+	PostImagePtah   string `mapstructure:"post_image_path"`
 }
 
 func Init() error {
@@ -70,7 +72,7 @@ func Init() error {
 	viper.WatchConfig()
 	viper.OnConfigChange(func(in fsnotify.Event) {
 		fmt.Println("配置文件已被修改")
-		viper.Unmarshal(&Conf)
+		_ = viper.Unmarshal(&Conf)
 	})
 
 	err := viper.ReadInConfig()

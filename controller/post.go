@@ -1,9 +1,15 @@
 package controller
 
 import (
+	"agricultural_vision/pkg/alioss"
+	"agricultural_vision/settings"
 	"errors"
+	"fmt"
+	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -200,4 +206,45 @@ func GetUserLikedPostListHandler(c *gin.Context) {
 		return
 	}
 	ResponseSuccess(c, data)
+}
+
+// 上传帖子图片
+func UploadPostImageHandler(c *gin.Context) {
+	// 获取上传的文件
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		zap.L().Error("获取上传文件失败", zap.Error(err))
+		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
+		return
+	}
+	defer func(file multipart.File) {
+		_ = file.Close()
+	}(file)
+
+	// 限制文件大小（5MB）
+	if header.Size > 5*1024*1024 {
+		zap.L().Error("文件大小超出5MB", zap.Error(err))
+		ResponseError(c, http.StatusBadRequest, "文件大小超出5MB")
+		return
+	}
+
+	// 获取文件扩展名ext
+	ext := filepath.Ext(header.Filename)
+	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
+		zap.L().Error("文件格式不支持", zap.Error(err))
+		ResponseError(c, http.StatusBadRequest, "文件格式不支持")
+		return
+	}
+
+	// 生成唯一文件名
+	newFileName := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
+
+	// 上传到 OSS
+	fileURL, err := alioss.UploadFile(file, newFileName, settings.Conf.AliossConfig.PostImagePtah)
+	if err != nil {
+		zap.L().Error("上传文件失败", zap.Error(err))
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
+	ResponseSuccess(c, fileURL)
 }

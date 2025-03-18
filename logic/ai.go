@@ -40,16 +40,14 @@ func AiTalk(aiRequest *request.AiRequest, userID int64) (aiResponse *response.Ai
 	conversation.Messages = append(conversation.Messages, response.Message{Content: aiRequest.UserInput, Role: "user"})
 	conversation.Mutex.Unlock()
 
-	// 向 DeepSeek AI 发送请求
+	// 向智谱清言发送请求
 	apiKey := settings.Conf.AiConfig.ApiKey
 	apiURL := settings.Conf.AiConfig.ApiUrl
 
 	// 构建请求体
 	body := map[string]interface{}{
-		"messages":   conversation.Messages,
-		"model":      "deepseek-chat",
-		"max_tokens": 100,
-		"stream":     false,
+		"model":    settings.Conf.AiConfig.Model, // 请根据需要选择模型
+		"messages": conversation.Messages,
 	}
 
 	// 序列化请求体
@@ -63,6 +61,7 @@ func AiTalk(aiRequest *request.AiRequest, userID int64) (aiResponse *response.Ai
 	if err != nil {
 		return
 	}
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 

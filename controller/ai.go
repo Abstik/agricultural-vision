@@ -1,12 +1,12 @@
 package controller
 
 import (
-	"agricultural_vision/constants"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
+	"agricultural_vision/constants"
 	"agricultural_vision/logic"
 	"agricultural_vision/middleware"
 	"agricultural_vision/models/request"

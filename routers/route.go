@@ -57,7 +57,7 @@ func SetupRouter(mode string) *gin.Engine {
 	// AI模块
 	AIGroup := r.Group("/ai")
 	{
-		AIGroup.POST("/ai", middleware.JWTAuthMiddleware(), controller.AiHandler)
+		AIGroup.POST("", middleware.JWTAuthMiddleware(), controller.AiHandler)
 	}
 
 	// 首页模块
@@ -80,6 +80,8 @@ func SetupRouter(mode string) *gin.Engine {
 
 		// 发布帖子
 		communityPost.POST("/post", controller.CreatePostHandler)
+		// 上传图片
+		communityPost.POST("/upload", controller.UploadPostImageHandler)
 		// 删除帖子
 		communityPost.DELETE("/post/:id", controller.DeletePostHandler)
 		// 查询帖子列表（指定排序方式，默认按时间倒序）
