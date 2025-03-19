@@ -20,4 +20,5 @@ const (
 	CodeNoPost           string = "此帖子不存在"
 	CodeNoComment        string = "此评论不存在"
 	CodeNoPermission     string = "没有权限"
+	CodeEmptyKeyword     string = "关键词为空"
 )

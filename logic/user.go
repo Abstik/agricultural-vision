@@ -5,6 +5,7 @@ import (
 	"agricultural_vision/dao/mysql"
 	"agricultural_vision/models/entity"
 	"agricultural_vision/models/request"
+	"agricultural_vision/models/response"
 	"agricultural_vision/pkg/gomail"
 	auth "agricultural_vision/pkg/jwt"
 	"agricultural_vision/pkg/md5"
@@ -113,4 +114,48 @@ func UpdateUserInfo(p *request.UpdateUserInfoRequest, id int64) error {
 	}
 
 	return mysql.UpdateUserByID(&newUser)
+}
+
+// 查询用户主页
+func GetUserHomePage(targetUserID int64) (*response.UserHomePageResponse, error) {
+	userHomePageResponse := &response.UserHomePageResponse{
+		Posts: &response.PostListResponse{
+			Data: []*response.PostResponse{},
+		},
+		LikedPosts: &response.PostListResponse{
+			Data: []*response.PostResponse{},
+		},
+	}
+
+	// 获取用户基本信息并填充
+	userInfo, err := mysql.GetUserInfo(targetUserID)
+	if err != nil {
+		return nil, err
+	}
+	userHomePageResponse.ID = userInfo.ID
+	userHomePageResponse.Username = userInfo.Username
+	userHomePageResponse.Email = userInfo.Email
+	userHomePageResponse.Avatar = userInfo.Avatar
+
+	// 获取用户帖子列表并填充
+	userPostList, err := GetUserPostList(targetUserID, &request.ListRequest{
+		Page: 1,
+		Size: 10,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 获取用户点赞帖子列表并填充
+	userLikedPostList, err := GetUserLikedPostList(targetUserID, &request.ListRequest{
+		Page: 1,
+		Size: 10,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	userHomePageResponse.Posts = userPostList
+	userHomePageResponse.LikedPosts = userLikedPostList
+	return userHomePageResponse, nil
 }

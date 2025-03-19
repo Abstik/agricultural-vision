@@ -1,13 +1,13 @@
 package response
 
 // 用户详情
-type UserResponse struct {
-	ID       int64             `json:"id"`
-	Username string            `json:"username"`
-	Email    string            `json:"email"`
-	Avatar   string            `json:"avatar"`
-	Posts    []PostResponse    `json:"posts"`    // 该用户的帖子
-	Comments []CommentResponse `json:"comments"` // 该用户的评论
+type UserHomePageResponse struct {
+	ID         int64             `json:"id"`
+	Username   string            `json:"username"`
+	Email      string            `json:"email"`
+	Avatar     string            `json:"avatar"`
+	Posts      *PostListResponse `json:"posts"`       // 该用户发布的帖子
+	LikedPosts *PostListResponse `json:"liked_posts"` // 该用户点赞的帖子
 }
 
 // 用户简略信息（帖子和评论中展示）

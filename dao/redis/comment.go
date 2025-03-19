@@ -14,6 +14,7 @@ import (
 // 创建一级评论
 func CreateFirstLevelComment(commentID, postID int64) error {
 	postIDStr := strconv.FormatInt(postID, 10)
+	commentIDStr := strconv.FormatInt(commentID, 10)
 
 	//开启事务
 	pipeline := client.TxPipeline()
@@ -21,13 +22,13 @@ func CreateFirstLevelComment(commentID, postID int64) error {
 	//在redis中更新评论时间
 	pipeline.ZAdd(getRedisKey(KeyCommentTimeZSetPF)+postIDStr, redis.Z{
 		Score:  float64(time.Now().Unix()),
-		Member: commentID,
+		Member: commentIDStr,
 	})
 
 	//在redis中更新评论分数
 	pipeline.ZAdd(getRedisKey(KeyCommentScoreZSetPF)+postIDStr, redis.Z{
 		Score:  float64(time.Now().Unix()), // 默认分数不是0，而是当前的时间戳（这样总分数可以结合投票数和时间）
-		Member: commentID,
+		Member: commentIDStr,
 	})
 
 	//在redis中更新评论数（累计+1）
@@ -36,7 +37,7 @@ func CreateFirstLevelComment(commentID, postID int64) error {
 	//初始化二级评论数为0
 	pipeline.ZAdd(getRedisKey(KeyCommentNumZSet), redis.Z{
 		Score:  0,
-		Member: commentID,
+		Member: commentIDStr,
 	})
 
 	_, err := pipeline.Exec()
@@ -61,16 +62,16 @@ func DeleteComment(commentID, postID int64, parentID *int64) error {
 	commentIDStr := strconv.FormatInt(commentID, 10)
 
 	// 1. 从帖子评论时间集合中删除该评论（一级评论才有效）
-	pipeline.ZRem(getRedisKey(KeyCommentTimeZSetPF+postIDStr), commentID)
+	pipeline.ZRem(getRedisKey(KeyCommentTimeZSetPF+postIDStr), commentIDStr)
 
 	// 2. 从评论分数集合中删除该评论（一级评论才有效）
-	pipeline.ZRem(getRedisKey(KeyCommentScoreZSetPF+postIDStr), commentID)
+	pipeline.ZRem(getRedisKey(KeyCommentScoreZSetPF+postIDStr), commentIDStr)
 
 	// 3. 删除该评论的点赞记录
 	pipeline.Del(getRedisKey(KeyCommentVotedZSetPF + commentIDStr))
 
 	// 4. 从评论数集合中删除该评论（一级评论才有效）
-	pipeline.ZRem(getRedisKey(KeyCommentNumZSet), commentID)
+	pipeline.ZRem(getRedisKey(KeyCommentNumZSet), commentIDStr)
 
 	// 5. 如果是一级评论，减少帖子总评论数
 	if parentID == nil {

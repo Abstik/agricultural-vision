@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -144,7 +145,7 @@ func ChangePasswordHandler(c *gin.Context) {
 	return
 }
 
-// 查询个人信息
+// 查询用户本人信息
 func GetUserInfoHandler(c *gin.Context) {
 	// 1.获取用户id
 	userID, err := middleware.GetCurrentUserID(c)
@@ -256,4 +257,32 @@ func UpdateUserAvatarHandler(c *gin.Context) {
 	}
 
 	ResponseSuccess(c, nil)
+}
+
+// 查询用户首页信息
+func GetUserHomePageHandler(c *gin.Context) {
+	// 目标用户的id
+	targetUserIDStr := c.Param("id")
+	targetUserID, err := strconv.ParseInt(targetUserIDStr, 10, 64)
+	if err != nil {
+		zap.L().Error("参数错误", zap.Error(err))
+		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
+		return
+	}
+
+	/*// 当前用户id
+	currentUserID, err := middleware.GetCurrentUserID(c)
+	if err != nil {
+		zap.L().Error("获取当前用户id失败", zap.Error(err))
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}*/
+
+	data, err := logic.GetUserHomePage(targetUserID)
+	if err != nil {
+		zap.L().Error("查询用户首页信息失败", zap.Error(err))
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
+	ResponseSuccess(c, data)
 }

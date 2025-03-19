@@ -51,6 +51,8 @@ func SetupRouter(mode string) *gin.Engine {
 			userGroup.PUT("/info", controller.UpdateUserInfoHandler)
 			// 修改个人头像
 			userGroup.POST("/avatar", controller.UpdateUserAvatarHandler)
+			// 查询用户主页
+			userGroup.GET("/home-page/:id", controller.GetUserHomePageHandler)
 		}
 	}
 
@@ -58,6 +60,12 @@ func SetupRouter(mode string) *gin.Engine {
 	AIGroup := r.Group("/ai")
 	{
 		AIGroup.POST("", middleware.JWTAuthMiddleware(), controller.AiHandler)
+	}
+
+	// 搜索模块
+	searchGroup := r.Group("/search")
+	{
+		searchGroup.GET("", controller.SearchHandler)
 	}
 
 	// 首页模块

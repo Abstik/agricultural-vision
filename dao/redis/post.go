@@ -21,22 +21,22 @@ func CreatePost(postID int64, communityID int64) error {
 	//在redis中更新帖子创建时间
 	pipeline.ZAdd(getRedisKey(KeyPostTimeZSet), redis.Z{
 		Score:  float64(time.Now().Unix()),
-		Member: postID,
+		Member: postIDStr,
 	})
 
 	//在redis中更新帖子分数
 	pipeline.ZAdd(getRedisKey(KeyPostScoreZSet), redis.Z{
 		Score:  float64(time.Now().Unix()), // 默认分数不是0，而是当前的时间戳（这样总分数可以结合投票数和时间）
-		Member: postID,
+		Member: postIDStr,
 	})
 
 	//在redis中更新帖子和社区关系
-	pipeline.SAdd(getRedisKey(KeyCommunitySetPF)+communityIDStr, postID)
+	pipeline.SAdd(getRedisKey(KeyCommunitySetPF)+communityIDStr, postIDStr)
 
 	//初始化帖子评论数
-	pipeline.ZAdd(getRedisKey(KeyPostCommentNumZSet)+postIDStr, redis.Z{
+	pipeline.ZAdd(getRedisKey(KeyPostCommentNumZSet), redis.Z{
 		Score:  0,
-		Member: postID,
+		Member: postIDStr,
 	})
 
 	_, err := pipeline.Exec()
@@ -51,7 +51,7 @@ func DeletePost(postID int64, communityID int64) error {
 	// 开启事务
 	pipeline := client.TxPipeline()
 
-	// 查询出此帖子所有评论的 id
+	// 查询出此帖子所有一级评论的id
 	commentIDs, _ := client.ZRange(getRedisKey(KeyCommentTimeZSetPF+postIDStr), 0, -1).Result()
 
 	// 从时间排序集合删除
@@ -70,7 +70,7 @@ func DeletePost(postID int64, communityID int64) error {
 	pipeline.ZRem(getRedisKey(KeyPostCommentNumZSet), postIDStr)
 
 	// 删除该帖子下的所有评论时间记录
-	pipeline.Del(getRedisKey(KeyCommentTimeZSetPF + communityIDStr))
+	pipeline.Del(getRedisKey(KeyCommentTimeZSetPF + postIDStr))
 
 	// 删除该帖子下的所有评论投票记录
 	pipeline.Del(getRedisKey(KeyCommentScoreZSetPF + postIDStr))

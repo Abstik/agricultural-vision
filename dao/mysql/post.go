@@ -24,6 +24,12 @@ func CreatePost(p *entity.Post) error {
 
 // 删除帖子
 func DeletePost(id int64) error {
+	// 先删除关联的评论
+	if err := DB.Where("post_id = ?", id).Delete(&entity.Comment{}).Error; err != nil {
+		return err
+	}
+
+	// 再删除帖子
 	result := DB.Delete(&entity.Post{}, id)
 	if result.Error != nil {
 		return result.Error

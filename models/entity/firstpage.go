@@ -38,15 +38,15 @@ type CropDetail struct {
 // 短视频
 type Video struct {
 	Id  int64  `json:"-" gorm:"primaryKey"`
-	Url string `json:"url" gorm:"type:varchar(625)"` //视频链接
+	Url string `json:"url" gorm:"type:varchar(625)"` // 视频链接
 }
 
 // 诗歌
 type Poetry struct {
 	Id       int64  `json:"-" gorm:"primaryKey"`
-	Title    string `json:"title" gorm:"type:varchar(625)"`    //标题
-	Author   string `json:"author" gorm:"type:varchar(625)"`   //作者
-	Content  string `json:"content" gorm:"type:text"`          //内容
-	Trans    string `json:"trans" gorm:"type:varchar(625)"`    //译文
+	Title    string `json:"title" gorm:"type:varchar(625)"`    // 标题
+	Author   string `json:"author" gorm:"type:varchar(625)"`   // 作者
+	Content  string `json:"content" gorm:"type:text"`          // 内容
+	Trans    string `json:"trans" gorm:"type:varchar(625)"`    // 译文
 	Allusion string `json:"allusion" gorm:"type:varchar(625)"` // 典故
 }
