@@ -18,7 +18,7 @@ var DB *gorm.DB
 
 // Init 初始化 MySQL 连接
 func Init(cfg *settings.MySQLConfig) (err error) {
-	// 构造 DSN (Data Source Email)
+	// 构造 DSN (Comments Source Email)
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DB)
 

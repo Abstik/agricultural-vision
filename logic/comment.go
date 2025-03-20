@@ -56,7 +56,7 @@ func CreateComment(createCommentRequest *request.CreateCommentRequest, userID in
 		return nil, err
 	}
 
-	// 如果是二级以上评论
+	// 如果是二级以上评论（不展示回复数，展示父评论作者信息）
 	if comment.ParentID != nil && *comment.ParentID != *comment.RootID {
 		// 查询父评论的作者信息
 		parentUserinfo, err := mysql.GetUserBriefInfoByCommentID(*comment.ParentID)
@@ -64,22 +64,33 @@ func CreateComment(createCommentRequest *request.CreateCommentRequest, userID in
 			return nil, err
 		}
 		commentResponse := &response.CommentResponse{
-			ID:           comment.ID,
-			Content:      comment.Content,
-			Author:       author,
-			RepliesCount: 0,
-			Parent:       parentUserinfo,
-			CreatedAt:    comment.CreatedAt.Format("2006-01-02 15:04:05"),
+			ID:        comment.ID,
+			Content:   comment.Content,
+			Author:    author,
+			Parent:    parentUserinfo,
+			CreatedAt: comment.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 		return commentResponse, nil
 	}
 
-	// 如果是顶级评论或二级评论
+	// 如果是二级评论（不展示回复数）
+	if comment.ParentID != nil && *comment.ParentID == *comment.RootID {
+		commentResponse := &response.CommentResponse{
+			ID:        comment.ID,
+			Content:   comment.Content,
+			Author:    author,
+			CreatedAt: comment.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
+		return commentResponse, nil
+	}
+
+	// 如果是顶级评论（展示回复数）
+	var repliesCount int64 = 0
 	commentResponse := &response.CommentResponse{
 		ID:           comment.ID,
 		Content:      comment.Content,
 		Author:       author,
-		RepliesCount: 0,
+		RepliesCount: &repliesCount,
 		CreatedAt:    comment.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 	return commentResponse, nil
@@ -118,7 +129,7 @@ func DeleteComment(commentID int64, userID int64) error {
 // 查询单个帖子的顶级评论
 func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest, userID int64) (commentListResponse *response.CommentListResponse, err error) {
 	commentListResponse = &response.CommentListResponse{
-		Data: []*response.CommentResponse{},
+		Comments: []*response.CommentResponse{},
 	}
 
 	//从redis中，根据指定的排序方式和查询数量，查询符合条件的顶级评论id列表
@@ -163,17 +174,18 @@ func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest, us
 		}
 
 		//封装查询到的信息
+		repliesCount := int64(commentNum[idx])
 		commentResponse := &response.CommentResponse{
 			ID:           comment.ID,
 			Content:      comment.Content,
+			Author:       userBriefInfo,
 			LikeCount:    voteData[idx],
 			Liked:        liked,
-			RepliesCount: int64(commentNum[idx]),
-			Author:       userBriefInfo,
+			RepliesCount: &repliesCount,
 			CreatedAt:    comment.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 
-		commentListResponse.Data = append(commentListResponse.Data, commentResponse)
+		commentListResponse.Comments = append(commentListResponse.Comments, commentResponse)
 	}
 	return
 }
@@ -181,7 +193,7 @@ func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest, us
 // 查询单个顶级评论的子评论
 func GetSecondLevelCommentList(rootID int64, listRequest *request.ListRequest, userID int64) (commentListResponse *response.CommentListResponse, err error) {
 	commentListResponse = &response.CommentListResponse{
-		Data: []*response.CommentResponse{},
+		Comments: []*response.CommentResponse{},
 	}
 
 	// 从mysql中查询子评论
@@ -234,18 +246,18 @@ func GetSecondLevelCommentList(rootID int64, listRequest *request.ListRequest, u
 			commentResponse := &response.CommentResponse{
 				ID:        comment.ID,
 				Content:   comment.Content,
+				Author:    userBriefInfo,
 				LikeCount: voteData[idx],
 				Liked:     liked,
 				Parent:    parentUserBriefInfo,
-				Author:    userBriefInfo,
 				CreatedAt: comment.CreatedAt.Format("2006-01-02 15:04:05"),
 			}
 
-			commentListResponse.Data = append(commentListResponse.Data, commentResponse)
+			commentListResponse.Comments = append(commentListResponse.Comments, commentResponse)
 			continue
 		}
 
-		//如果是顶级或二级评论
+		//如果是二级评论（不展示回复数和父评论作者信息）
 		commentResponse := &response.CommentResponse{
 			ID:        comment.ID,
 			Content:   comment.Content,
@@ -255,7 +267,7 @@ func GetSecondLevelCommentList(rootID int64, listRequest *request.ListRequest, u
 			CreatedAt: comment.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 
-		commentListResponse.Data = append(commentListResponse.Data, commentResponse)
+		commentListResponse.Comments = append(commentListResponse.Comments, commentResponse)
 	}
 	return
 }

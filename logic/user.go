@@ -120,10 +120,10 @@ func UpdateUserInfo(p *request.UpdateUserInfoRequest, id int64) error {
 func GetUserHomePage(targetUserID int64) (*response.UserHomePageResponse, error) {
 	userHomePageResponse := &response.UserHomePageResponse{
 		Posts: &response.PostListResponse{
-			Data: []*response.PostResponse{},
+			Posts: []*response.PostResponse{},
 		},
 		LikedPosts: &response.PostListResponse{
-			Data: []*response.PostResponse{},
+			Posts: []*response.PostResponse{},
 		},
 	}
 

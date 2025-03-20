@@ -16,7 +16,6 @@ func GetCommunityList() ([]*response.CommunityBriefResponse, error) {
 
 	result := DB.Model(&entity.Community{}).
 		Select("id", "community_name").
-		Order("created_at DESC"). // 根据创建时间倒序排序
 		Find(&communities)
 
 	// 如果未查询到结果

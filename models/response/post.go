@@ -14,6 +14,6 @@ type PostResponse struct {
 }
 
 type PostListResponse struct {
-	Data  []*PostResponse `json:"posts"`
+	Posts []*PostResponse `json:"posts"`
 	Total int64           `json:"total"`
 }

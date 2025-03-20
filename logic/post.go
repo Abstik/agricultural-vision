@@ -154,7 +154,7 @@ func GetPostListByIDs(ids []string, userId int64) (postResponses []*response.Pos
 // 查询帖子列表，并按照指定方式排序
 func GetPostList(p *request.ListRequest, userID int64) (postListResponse *response.PostListResponse, err error) {
 	postListResponse = &response.PostListResponse{
-		Data: []*response.PostResponse{},
+		Posts: []*response.PostResponse{},
 	}
 
 	// 从redis中，根据指定的排序方式和查询数量，查询符合条件的id列表
@@ -168,14 +168,14 @@ func GetPostList(p *request.ListRequest, userID int64) (postListResponse *respon
 	}
 
 	// 根据id列表查询帖子列表，并封装响应数据
-	postListResponse.Data, err = GetPostListByIDs(ids, userID)
+	postListResponse.Posts, err = GetPostListByIDs(ids, userID)
 	return
 }
 
 // 查询该社区下的帖子列表，并按指定方式排序
 func GetCommunityPostList(listRequest *request.ListRequest, communityID int64, userID int64) (postListResponse *response.PostListResponse, err error) {
 	postListResponse = &response.PostListResponse{
-		Data: []*response.PostResponse{},
+		Posts: []*response.PostResponse{},
 	}
 
 	//从redis中，根据指定的排序方式和查询数量，查询符合条件的分页后的id列表
@@ -189,14 +189,14 @@ func GetCommunityPostList(listRequest *request.ListRequest, communityID int64, u
 	}
 
 	// 根据id列表查询帖子列表，并封装响应数据
-	postListResponse.Data, err = GetPostListByIDs(ids, userID)
+	postListResponse.Posts, err = GetPostListByIDs(ids, userID)
 	return
 }
 
 // 获取用户发布的帖子列表
 func GetUserPostList(userID int64, listRequest *request.ListRequest) (postListResponse *response.PostListResponse, err error) {
 	postListResponse = &response.PostListResponse{
-		Data: []*response.PostResponse{},
+		Posts: []*response.PostResponse{},
 	}
 
 	// 查询该用户的所有帖子
@@ -216,14 +216,14 @@ func GetUserPostList(userID int64, listRequest *request.ListRequest) (postListRe
 	}
 
 	// 根据id列表查询帖子列表，并封装响应数据
-	postListResponse.Data, err = GetPostListByIDs(ids, userID)
+	postListResponse.Posts, err = GetPostListByIDs(ids, userID)
 	return
 }
 
 // 获取用户点赞的帖子列表
 func GetUserLikedPostList(userID int64, listRequest *request.ListRequest) (postListResponse *response.PostListResponse, err error) {
 	postListResponse = &response.PostListResponse{
-		Data: []*response.PostResponse{},
+		Posts: []*response.PostResponse{},
 	}
 
 	// 从redis中查询用户点赞的帖子id列表
@@ -237,6 +237,6 @@ func GetUserLikedPostList(userID int64, listRequest *request.ListRequest) (postL
 	}
 
 	// 根据id列表查询帖子列表，并封装响应数据
-	postListResponse.Data, err = GetPostListByIDs(ids, userID)
+	postListResponse.Posts, err = GetPostListByIDs(ids, userID)
 	return
 }

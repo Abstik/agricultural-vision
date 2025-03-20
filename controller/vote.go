@@ -60,6 +60,7 @@ func CommentVoteController(c *gin.Context) {
 	if err != nil {
 		zap.L().Error("参数不正确", zap.Error(err))
 		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
+		return
 	}
 
 	userID, err := middleware.GetCurrentUserID(c)

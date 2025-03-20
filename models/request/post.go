@@ -3,7 +3,7 @@ package request
 // 发布帖子
 type CreatePostRequest struct {
 	Content     string `json:"content" binding:"required"`      // 内容
-	Image       string `json:"image,omitempty"`                 // 图片（可选）
+	Image       string `json:"image"`                           // 图片（可选）
 	CommunityID int64  `json:"community_id" binding:"required"` // 归属社区
 }
 

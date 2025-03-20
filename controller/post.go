@@ -83,16 +83,12 @@ func DeletePostHandler(c *gin.Context) {
 }
 
 // 查询帖子列表
-// 根据前端传来的参数,动态获取帖子列表（按照创建时间or分数排序）
-// 1.获取参数
-// 2.去redis查询id列表
-// 3.根据id去数据库查询帖子详细信息
 func GetPostListHandler(c *gin.Context) {
 	//初始化结构体时指定初始默认参数
 	p := &request.ListRequest{
 		Page:  1,
 		Size:  10,
-		Order: constants.OrderTime,
+		Order: constants.OrderScore,
 	}
 	err := c.ShouldBindQuery(p)
 	if err != nil {
