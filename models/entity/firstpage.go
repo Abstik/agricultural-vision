@@ -43,10 +43,12 @@ type Video struct {
 
 // 诗歌
 type Poetry struct {
-	Id       int64  `json:"-" gorm:"primaryKey"`
-	Title    string `json:"title" gorm:"type:varchar(625)"`    // 标题
-	Author   string `json:"author" gorm:"type:varchar(625)"`   // 作者
-	Content  string `json:"content" gorm:"type:text"`          // 内容
-	Trans    string `json:"trans" gorm:"type:varchar(625)"`    // 译文
-	Allusion string `json:"allusion" gorm:"type:varchar(625)"` // 典故
+	Id           int64  `json:"-" gorm:"primaryKey"`
+	Title        string `json:"title" gorm:"type:varchar(625)"`    // 标题
+	Author       string `json:"author" gorm:"type:varchar(625)"`   // 作者
+	Content      string `json:"content" gorm:"type:text"`          // 内容
+	Trans        string `json:"trans" gorm:"type:varchar(625)"`    // 译文
+	Allusion     string `json:"allusion" gorm:"type:varchar(625)"` // 典故
+	Sentence     string `json:"sentence" gorm:"type:varchar(625)"` // 句子
+	Introduction string `json:"introduction" gorm:"type:text"`     // 介绍
 }

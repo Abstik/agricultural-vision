@@ -12,6 +12,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	enTranslations "github.com/go-playground/validator/v10/translations/en"
 	zhTranslations "github.com/go-playground/validator/v10/translations/zh"
+
+	"agricultural_vision/models/request"
 )
 
 // 定义一个全局翻译器
@@ -59,6 +61,27 @@ func InitTrans(locale string) (err error) {
 		default:
 			err = enTranslations.RegisterDefaultTranslations(v, trans)
 		}
+		if err != nil {
+			return err
+		}
+
+		v.RegisterStructValidation(validateParentRootID, request.CreateCommentRequest{})
+		v.RegisterStructValidation(validatePostCommentID, request.VoteRequest{})
+
+		err = v.RegisterTranslation("parent_root", trans, func(ut ut.Translator) error {
+			return ut.Add("parent_root", "ParentID 和 RootID 必须同时提供或同时为空", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			return "ParentID 和 RootID 必须同时提供或同时为空"
+		})
+		if err != nil {
+			return err
+		}
+
+		err = v.RegisterTranslation("post_comment", trans, func(ut ut.Translator) error {
+			return ut.Add("post_comment", "PostID 和 CommentID 只能填一个值", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			return "PostID 和 CommentID 只能填一个值"
+		})
 		return
 	}
 	return
@@ -67,10 +90,32 @@ func InitTrans(locale string) (err error) {
 // 去除提示信息中的结构体名称
 /*移除结构体名称前缀，从而清理校验错误信息。
 比如，如果有一个字段 User.CommunityName，那么通过此函数，会将其转换为 CommunityName，方便返回更简洁的错误信息*/
-func RemoveTopStruct(fields map[string]string) map[string]string {
+func removeTopStruct(fields map[string]string) map[string]string {
 	res := map[string]string{}
 	for field, err := range fields {
 		res[field[strings.Index(field, ".")+1:]] = err
 	}
 	return res
+}
+
+// 自定义校验函数，确保 ParentID 和 RootID 要么都为空，要么都不为空
+func validateParentRootID(sl validator.StructLevel) {
+	su := sl.Current().Interface().(request.CreateCommentRequest)
+	if (su.ParentID == nil) != (su.RootID == nil) { // 只有一个为空，说明有问题
+		sl.ReportError(su.ParentID, "ParentID", "ParentID", "parent_root", "")
+		sl.ReportError(su.RootID, "RootID", "RootID", "parent_root", "")
+	}
+}
+
+// 自定义校验函数，确保 PostID 和 CommentID 必须二选一
+func validatePostCommentID(sl validator.StructLevel) {
+	su := sl.Current().Interface().(request.VoteRequest)
+	// 如果 PostID 和 CommentID 都为 0，或者都不为 0，则报错
+	if su.PostID == 0 && su.CommentID == 0 {
+		sl.ReportError(su.PostID, "PostID", "PostID", "post_comment", "")
+		sl.ReportError(su.CommentID, "CommentID", "CommentID", "post_comment", "")
+	} else if su.PostID != 0 && su.CommentID != 0 {
+		sl.ReportError(su.PostID, "PostID", "PostID", "post_comment", "")
+		sl.ReportError(su.CommentID, "CommentID", "CommentID", "post_comment", "")
+	}
 }

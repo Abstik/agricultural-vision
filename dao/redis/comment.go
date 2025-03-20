@@ -11,8 +11,8 @@ import (
 	"agricultural_vision/models/request"
 )
 
-// 创建一级评论
-func CreateFirstLevelComment(commentID, postID int64) error {
+// 创建顶级评论
+func CreateTopComment(commentID, postID int64) error {
 	postIDStr := strconv.FormatInt(postID, 10)
 	commentIDStr := strconv.FormatInt(commentID, 10)
 
@@ -44,18 +44,18 @@ func CreateFirstLevelComment(commentID, postID int64) error {
 	return err
 }
 
-// 创建二级评论
-func CreateSecondLevelComment(parentID int64) error {
-	parentIDStr := strconv.FormatInt(parentID, 10)
+// 创建子评论
+func CreateSonComment(rootID int64) error {
+	rootIDStr := strconv.FormatInt(rootID, 10)
 
 	//在redis中更新子评论数（累计+1）
-	err := client.ZIncrBy(getRedisKey(KeyCommentNumZSet), 1, parentIDStr).Err()
+	err := client.ZIncrBy(getRedisKey(KeyCommentNumZSet), 1, rootIDStr).Err()
 
 	return err
 }
 
 // 删除评论
-func DeleteComment(commentID, postID int64, parentID *int64) error {
+func DeleteComment(commentID, postID int64, rootID *int64) error {
 	pipeline := client.TxPipeline()
 
 	postIDStr := strconv.FormatInt(postID, 10)
@@ -73,13 +73,13 @@ func DeleteComment(commentID, postID int64, parentID *int64) error {
 	// 4. 从评论数集合中删除该评论（一级评论才有效）
 	pipeline.ZRem(getRedisKey(KeyCommentNumZSet), commentIDStr)
 
-	// 5. 如果是一级评论，减少帖子总评论数
-	if parentID == nil {
+	// 5. 如果是顶级评论，减少帖子总评论数
+	if rootID == nil {
 		pipeline.ZIncrBy(getRedisKey(KeyPostCommentNumZSet), -1, postIDStr)
 	} else {
-		// 6. 如果是二级评论，减少父评论的子评论数
-		parentIDStr := strconv.FormatInt(*parentID, 10)
-		pipeline.ZIncrBy(getRedisKey(KeyCommentNumZSet), -1, parentIDStr)
+		// 6. 如果是子评论，减少父评论的子评论数
+		rootIDStr := strconv.FormatInt(*rootID, 10)
+		pipeline.ZIncrBy(getRedisKey(KeyCommentNumZSet), -1, rootIDStr)
 	}
 
 	// 执行 Redis 事务
@@ -87,8 +87,8 @@ func DeleteComment(commentID, postID int64, parentID *int64) error {
 	return err
 }
 
-// 根据排序方式和索引范围，查询评论id列表
-func GetCommentIDsInOrder(p *request.ListRequest, postID int64) ([]string, int64, error) {
+// 根据排序方式和索引范围，查询顶级评论id列表
+func GetTopCommentIDsInOrder(p *request.ListRequest, postID int64) ([]string, int64, error) {
 	//从redis中获取id
 	//1.根据用户请求中携带的order参数（排序方式）确定要查询的redis key
 	key := getRedisKey(KeyCommentTimeZSetPF + strconv.Itoa(int(postID)))
@@ -128,7 +128,7 @@ func GetCommentVoteDataByIDs(ids []string) (data []int64, err error) {
 	return data, nil
 }
 
-// 根据id列表查询帖子的一级评论数
+// 根据帖子id列表查询帖子的顶级评论数
 func GetCommentNumByIDs(ids []string) ([]float64, error) {
 	// 使用 pipeline 批量执行 Redis 命令
 	pipeline := client.Pipeline()
@@ -161,7 +161,7 @@ func GetCommentNumByIDs(ids []string) ([]float64, error) {
 	return nums, nil
 }
 
-// 根据id列表查询帖子评论的二级评论数
+// 根据顶级评论id列表查询顶级评论的子评论数
 func GetSecondLevelCommentNumByIDs(ids []string) (nums []float64, err error) {
 	// 使用 pipeline 批量执行 Redis 命令
 	pipeline := client.Pipeline()

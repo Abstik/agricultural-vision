@@ -73,7 +73,7 @@ func VoteForPost(userID, postID string, direction float64) error {
 }
 
 // 为评论投票
-func VoteForComment(userID, commentID, postID string, direction float64, firstLevel bool) error {
+func VoteForComment(userID, commentID, postID string, direction float64, parentID *int64) error {
 	// 投票的权重，如果一级评论发布时间超过一周，则权重为0.5（减半）
 	weight := 1.0
 
@@ -97,7 +97,7 @@ func VoteForComment(userID, commentID, postID string, direction float64, firstLe
 	pipeline := client.TxPipeline()
 
 	//给指定的键和成员名增加分数
-	if firstLevel { // 如果是一级评论才更新
+	if parentID == nil { // 如果是一级评论才更新
 		pipeline.ZIncrBy(getRedisKey(KeyCommentScoreZSetPF+postID), diff*constants.ScorePerVote*weight, commentID)
 	}
 

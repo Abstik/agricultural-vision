@@ -34,8 +34,18 @@ func CreateComment(createCommentRequest *request.CreateCommentRequest, userID in
 		AuthorID: userID,
 		PostID:   createCommentRequest.PostID,
 	}
+	if err := mysql.CreateComment(comment); err != nil {
+		return nil, err
+	}
 
-	err = mysql.CreateComment(comment)
+	// 在redis中创建评论
+	if createCommentRequest.RootID == nil {
+		// 创建顶级评论
+		err = redis.CreateTopComment(comment.ID, comment.PostID)
+	} else {
+		// 创建子评论
+		err = redis.CreateSonComment(*createCommentRequest.RootID)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -46,26 +56,32 @@ func CreateComment(createCommentRequest *request.CreateCommentRequest, userID in
 		return nil, err
 	}
 
-	// 构造返回值
+	// 如果是二级以上评论
+	if comment.ParentID != nil && *comment.ParentID != *comment.RootID {
+		// 查询父评论的作者信息
+		parentUserinfo, err := mysql.GetUserBriefInfoByCommentID(*comment.ParentID)
+		if err != nil {
+			return nil, err
+		}
+		commentResponse := &response.CommentResponse{
+			ID:           comment.ID,
+			Content:      comment.Content,
+			Author:       author,
+			RepliesCount: 0,
+			Parent:       parentUserinfo,
+			CreatedAt:    comment.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
+		return commentResponse, nil
+	}
+
+	// 如果是顶级评论或二级评论
 	commentResponse := &response.CommentResponse{
-		ID:        comment.ID,
-		Content:   comment.Content,
-		Author:    *author,
-		CreatedAt: comment.CreatedAt.Format("2006-01-02 15:04:05"),
+		ID:           comment.ID,
+		Content:      comment.Content,
+		Author:       author,
+		RepliesCount: 0,
+		CreatedAt:    comment.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
-
-	// 在redis中创建评论
-	if createCommentRequest.ParentID == nil {
-		// 在redis中创建一级评论
-		err = redis.CreateFirstLevelComment(comment.ID, comment.PostID)
-	} else {
-		// 在redis中创建二级评论
-		err = redis.CreateSecondLevelComment(*createCommentRequest.ParentID)
-	}
-	if err != nil {
-		return nil, err
-	}
-
 	return commentResponse, nil
 }
 
@@ -92,20 +108,21 @@ func DeleteComment(commentID int64, userID int64) error {
 	}
 
 	// 在redis中删除评论
-	if err := redis.DeleteComment(commentID, comment[0].PostID, comment[0].ParentID); err != nil {
+	if err := redis.DeleteComment(commentID, comment[0].PostID, comment[0].RootID); err != nil {
 		return err
 	}
+
 	return nil
 }
 
-// 查询单个帖子的一级评论
+// 查询单个帖子的顶级评论
 func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest, userID int64) (commentListResponse *response.CommentListResponse, err error) {
 	commentListResponse = &response.CommentListResponse{
 		Data: []*response.CommentResponse{},
 	}
 
-	//从redis中，根据指定的排序方式和查询数量，查询符合条件的id列表
-	ids, total, err := redis.GetCommentIDsInOrder(listRequest, postID)
+	//从redis中，根据指定的排序方式和查询数量，查询符合条件的顶级评论id列表
+	ids, total, err := redis.GetTopCommentIDsInOrder(listRequest, postID)
 	if err != nil {
 		return
 	}
@@ -120,13 +137,13 @@ func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest, us
 		return
 	}
 
-	// 查询所有一级评论的赞成票数——切片
+	// 查询所有顶级评论的赞成票数——切片
 	voteData, err := redis.GetCommentVoteDataByIDs(ids)
 	if err != nil {
 		return
 	}
 
-	// 查询所有一级评论的二级评论数——切片
+	// 查询所有顶级评论的子评论数——切片
 	commentNum, err := redis.GetSecondLevelCommentNumByIDs(ids)
 
 	//将帖子作者及分区信息查询出来填充到帖子中
@@ -152,7 +169,7 @@ func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest, us
 			LikeCount:    voteData[idx],
 			Liked:        liked,
 			RepliesCount: int64(commentNum[idx]),
-			Author:       *userBriefInfo,
+			Author:       userBriefInfo,
 			CreatedAt:    comment.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 
@@ -161,14 +178,14 @@ func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest, us
 	return
 }
 
-// 查询单个一级评论的二级评论
-func GetSecondLevelCommentList(commentID int64, listRequest *request.ListRequest, userID int64) (commentListResponse *response.CommentListResponse, err error) {
+// 查询单个顶级评论的子评论
+func GetSecondLevelCommentList(rootID int64, listRequest *request.ListRequest, userID int64) (commentListResponse *response.CommentListResponse, err error) {
 	commentListResponse = &response.CommentListResponse{
 		Data: []*response.CommentResponse{},
 	}
 
-	// 从mysql中查询二级评论
-	comments, total, err := mysql.GetSecondLevelCommentList(commentID, listRequest.Page, listRequest.Size)
+	// 从mysql中查询子评论
+	comments, total, err := mysql.GetSonCommentList(rootID, listRequest.Page, listRequest.Size)
 	if err != nil {
 		return
 	}
@@ -177,13 +194,13 @@ func GetSecondLevelCommentList(commentID int64, listRequest *request.ListRequest
 		return
 	}
 
-	// 将二级评论的ID提取出来
-	commentIDs := make([]string, 0, len(comments)) // 预分配容量，但长度为 0
+	// 将子评论的ID提取出来
+	commentIDs := make([]string, 0, len(comments))
 	for _, comment := range comments {
 		commentIDs = append(commentIDs, strconv.FormatInt(comment.ID, 10))
 	}
 
-	// 查询所有二级评论的赞成票数——切片
+	// 查询所有子评论的赞成票数——切片
 	voteData, err := redis.GetCommentVoteDataByIDs(commentIDs)
 	if err != nil {
 		return
@@ -205,13 +222,36 @@ func GetSecondLevelCommentList(commentID int64, listRequest *request.ListRequest
 			continue
 		}
 
-		//封装查询到的信息
+		//如果是二级以上评论，则需要查询父评论的作者信息
+		if *comment.ParentID != *comment.RootID {
+			//查询父评论的作者简略信息
+			parentUserBriefInfo, err := mysql.GetUserBriefInfo(comment.AuthorID)
+			if err != nil {
+				zap.L().Error("查询父评论作者信息失败", zap.Error(err))
+				continue
+			}
+
+			commentResponse := &response.CommentResponse{
+				ID:        comment.ID,
+				Content:   comment.Content,
+				LikeCount: voteData[idx],
+				Liked:     liked,
+				Parent:    parentUserBriefInfo,
+				Author:    userBriefInfo,
+				CreatedAt: comment.CreatedAt.Format("2006-01-02 15:04:05"),
+			}
+
+			commentListResponse.Data = append(commentListResponse.Data, commentResponse)
+			continue
+		}
+
+		//如果是顶级或二级评论
 		commentResponse := &response.CommentResponse{
 			ID:        comment.ID,
 			Content:   comment.Content,
+			Author:    userBriefInfo,
 			LikeCount: voteData[idx],
 			Liked:     liked,
-			Author:    *userBriefInfo,
 			CreatedAt: comment.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 

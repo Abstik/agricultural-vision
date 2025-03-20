@@ -54,9 +54,6 @@ func CommentVote(userID int64, p *request.VoteRequest) error {
 	parentID := comment[0].ParentID
 	postID := comment[0].PostID
 
-	if parentID != nil { // 给一级评论投票
-		return redis.VoteForComment(strconv.Itoa(int(userID)), strconv.Itoa(int(p.CommentID)), strconv.Itoa(int(postID)), float64(p.Direction), true)
-	} else { // 给二级评论投票
-		return redis.VoteForComment(strconv.Itoa(int(userID)), strconv.Itoa(int(p.CommentID)), strconv.Itoa(int(postID)), float64(p.Direction), false)
-	}
+	// 去redis中投票
+	return redis.VoteForComment(strconv.Itoa(int(userID)), strconv.Itoa(int(p.CommentID)), strconv.Itoa(int(postID)), float64(p.Direction), parentID)
 }

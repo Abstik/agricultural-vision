@@ -58,7 +58,7 @@ func GetParentIDAndPostIDByCommentID(commentID int64) (*int64, *int64, error) {
 	return result.ParentID, result.PostID, nil
 }*/
 
-// 根据评论ID列表获取评论列表（一级评论适用）
+// 根据评论ID列表获取评论列表
 func GetCommentListByIDs(ids []string) ([]*entity.Comment, error) {
 	var comments []*entity.Comment
 
@@ -78,23 +78,23 @@ func GetCommentListByIDs(ids []string) ([]*entity.Comment, error) {
 	return comments, result.Error
 }
 
-// 分页查询二级评论
-func GetSecondLevelCommentList(commentID, page, size int64) ([]*entity.Comment, int64, error) {
+// 根据分页查询子评论
+func GetSonCommentList(rootID, page, size int64) ([]*entity.Comment, int64, error) {
 	var comments []*entity.Comment
 	var total int64
 
 	// 查询总数
-	if err := DB.Model(&entity.Comment{}).Count(&total).Error; err != nil {
+	if err := DB.Model(&entity.Comment{}).Where("root_id = ?", rootID).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	// 计算偏移量
 	offset := (page - 1) * size
 
-	// 查询二级评论（parent_id 为 commentID）
+	// 查询子评论（root_id 为 rootID）
 	result := DB.
-		Where("parent_id = ?", commentID).
-		Order("created_at DESC"). // 默认按时间倒序排序
+		Where("root_id = ?", rootID).
+		Order("created_at ASC"). // 默认按时间正序排序（新发布的在后面）
 		Limit(int(size)).
 		Offset(int(offset)).
 		Find(&comments)

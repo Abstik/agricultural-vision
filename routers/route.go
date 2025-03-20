@@ -66,6 +66,7 @@ func SetupRouter(mode string) *gin.Engine {
 	searchGroup := r.Group("/search")
 	{
 		searchGroup.GET("", controller.SearchHandler)
+		searchGroup.GET("/:crop_id", controller.SearchCropHandler)
 	}
 
 	// 首页模块
@@ -103,10 +104,10 @@ func SetupRouter(mode string) *gin.Engine {
 		communityPost.POST("/comment", controller.CreateCommentHandler)
 		// 删除评论
 		communityPost.DELETE("/comment/:id", controller.DeleteCommentHandler)
-		// 查询一级评论（指定排序方式，默认按时间倒序）
-		communityPost.GET("/first-level-comment/:post_id", controller.GetFirstLevelCommentListHandler)
-		// 查询二级评论（无法排序）
-		communityPost.GET("/second-level-comment/:comment_id", controller.GetSecondLevelCommentListHandler)
+		// 查询顶级评论（指定排序方式，默认按时间倒序）
+		communityPost.GET("/first-level-comment/:post_id", controller.GetTopCommentListHandler)
+		// 查询子评论（按时间正序）
+		communityPost.GET("/second-level-comment/:comment_id", controller.GetSonCommentListHandler)
 		// 评论投票
 		communityPost.POST("/comment/vote", controller.CommentVoteController)
 

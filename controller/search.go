@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,7 @@ import (
 	"agricultural_vision/models/response"
 )
 
+// 关键词搜索
 func SearchHandler(c *gin.Context) {
 	keyword := c.Query("keyword")
 	if keyword == "" {
@@ -62,6 +64,9 @@ func extractSnippet(text, keyword string) string {
 		return ""
 	}
 
+	// 去掉换行符
+	text = strings.ReplaceAll(text, "\n", "")
+
 	// 将文本和关键字转换为 rune 切片，防止中文字符索引错误
 	runeText := []rune(text)
 	runeKeyword := []rune(keyword)
@@ -108,4 +113,23 @@ func extractSnippet(text, keyword string) string {
 	}
 
 	return snippet
+}
+
+// 农作物搜索
+func SearchCropHandler(c *gin.Context) {
+	cropIDStr := c.Param("crop_id")
+	cropID, err := strconv.ParseInt(cropIDStr, 10, 64)
+	if err != nil {
+		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
+		return
+	}
+
+	var crop entity.CropDetail
+
+	err = mysql.DB.Where("id = ?", cropID).Find(&crop).Error
+	if err != nil {
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
+	ResponseSuccess(c, crop)
 }

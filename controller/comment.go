@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 
 	"agricultural_vision/constants"
@@ -20,7 +21,12 @@ func CreateCommentHandler(c *gin.Context) {
 	createCommentRequest := &request.CreateCommentRequest{}
 	if err := c.ShouldBindJSON(createCommentRequest); err != nil {
 		zap.L().Error("参数不正确", zap.Error(err))
-		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
+		errs, ok := err.(validator.ValidationErrors)
+		if !ok {
+			ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
+			return
+		}
+		ResponseError(c, http.StatusBadRequest, removeTopStruct(errs.Translate(trans)))
 		return
 	}
 
@@ -43,7 +49,6 @@ func CreateCommentHandler(c *gin.Context) {
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
 		return
 	}
-
 	ResponseSuccess(c, data)
 }
 
@@ -84,8 +89,8 @@ func DeleteCommentHandler(c *gin.Context) {
 	ResponseSuccess(c, nil)
 }
 
-// 查询一级评论
-func GetFirstLevelCommentListHandler(c *gin.Context) {
+// 查询顶级评论
+func GetTopCommentListHandler(c *gin.Context) {
 	// 获取参数
 	postIDStr := c.Param("post_id")
 	postID, err1 := strconv.ParseInt(postIDStr, 10, 64)
@@ -111,10 +116,10 @@ func GetFirstLevelCommentListHandler(c *gin.Context) {
 		return
 	}
 
-	// 查询一级评论
+	// 查询顶级评论
 	commentListResponse, err := logic.GetFirstLevelCommentList(postID, listRequest, userID)
 	if err != nil {
-		zap.L().Error("查询一级评论失败", zap.Error(err))
+		zap.L().Error("查询顶级评论失败", zap.Error(err))
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
 		return
 	}
@@ -122,8 +127,8 @@ func GetFirstLevelCommentListHandler(c *gin.Context) {
 	ResponseSuccess(c, commentListResponse)
 }
 
-// 查询二级评论
-func GetSecondLevelCommentListHandler(c *gin.Context) {
+// 查询子评论
+func GetSonCommentListHandler(c *gin.Context) {
 	commentIDStr := c.Param("comment_id")
 	commentID, err1 := strconv.ParseInt(commentIDStr, 10, 64)
 
@@ -149,7 +154,7 @@ func GetSecondLevelCommentListHandler(c *gin.Context) {
 
 	commentListResponse, err := logic.GetSecondLevelCommentList(commentID, listRequest, userID)
 	if err != nil {
-		zap.L().Error("查询二级评论失败", zap.Error(err))
+		zap.L().Error("查询子评论失败", zap.Error(err))
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
 		return
 	}

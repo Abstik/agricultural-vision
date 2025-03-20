@@ -25,7 +25,7 @@ func PostVoteController(c *gin.Context) {
 			ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
 			return
 		} else {
-			errData := RemoveTopStruct(errs.Translate(trans)) //翻译错误
+			errData := removeTopStruct(errs.Translate(trans)) //翻译错误
 			ResponseError(c, http.StatusBadRequest, errData)
 			return
 		}

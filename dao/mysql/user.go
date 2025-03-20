@@ -78,3 +78,10 @@ func UpdatePassword(user *entity.User) error {
 	err := DB.Model(&entity.User{}).Where("email = ?", user.Email).Update("password", user.Password).Error
 	return err
 }
+
+// 根据评论ID获取评论作者简略信息
+func GetUserBriefInfoByCommentID(commentID int64) (*response.UserBriefResponse, error) {
+	userBriefResponse := new(response.UserBriefResponse)
+	err := DB.Model(&entity.User{}).Select("id", "username", "avatar").Where("id = (select author_id from comment where id = ?)", commentID).First(userBriefResponse).Error
+	return userBriefResponse, err
+}
