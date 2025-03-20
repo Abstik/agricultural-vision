@@ -72,7 +72,7 @@ func GetPostListByUserID(userID, page, size int64) ([]*entity.Post, int64, error
 	var posts []*entity.Post
 	var total int64
 
-	if err := DB.Model(&entity.Post{}).Count(&total).Error; err != nil {
+	if err := DB.Model(&entity.Post{}).Where("author_id = ?", userID).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
