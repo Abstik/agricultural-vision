@@ -27,8 +27,8 @@ type CropDetail struct {
 	Id           int64  `json:"-" gorm:"primaryKey"`
 	CategoryId   int64  `json:"-"`                               // 外键
 	Name         string `json:"name" gorm:"type:varchar(625)"`   // 名字
-	Spell        string `json:"spell" gorm:"type:varchar(625)"`  // 拼音
 	Icon         string `json:"icon" gorm:"type:varchar(625)"`   // 卡通图
+	Spell        string `json:"spell" gorm:"type:varchar(625)"`  // 拼音
 	Description  string `json:"description" gorm:"type:text"`    // 描述
 	Introduction string `json:"introduction" gorm:"type:text"`   // 简介
 	Image1       string `json:"image1" gorm:"type:varchar(625)"` // 图片

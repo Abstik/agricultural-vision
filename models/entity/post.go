@@ -4,7 +4,7 @@ package entity
 type Post struct {
 	BaseModel
 	Content string `gorm:"type:text;not_null" json:"content"`
-	Image   string `gorm:"type:varchar(512)" json:"image"`
+	Image   string `gorm:"type:text" json:"image"`
 
 	// 用户关联（BelongsTo关系）
 	AuthorID int64 `gorm:"index;not null" json:"author_id"`

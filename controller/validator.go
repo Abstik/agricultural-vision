@@ -68,6 +68,11 @@ func InitTrans(locale string) (err error) {
 		v.RegisterStructValidation(validateParentRootID, request.CreateCommentRequest{})
 		v.RegisterStructValidation(validatePostCommentID, request.VoteRequest{})
 
+		// 方法参数：
+		//1.自定义验证规则的标签
+		//2.翻译器实例
+		//3.注册翻译文本的函数，用于将自定义错误信息添加到翻译器中
+		//4.生成最终错误信息的函数，用于在验证失败时返回翻译后的错误信息
 		err = v.RegisterTranslation("parent_root", trans, func(ut ut.Translator) error {
 			return ut.Add("parent_root", "ParentID 和 RootID 必须同时提供或同时为空", true)
 		}, func(ut ut.Translator, fe validator.FieldError) string {
@@ -100,8 +105,11 @@ func removeTopStruct(fields map[string]string) map[string]string {
 
 // 自定义校验函数，确保 ParentID 和 RootID 要么都为空，要么都不为空
 func validateParentRootID(sl validator.StructLevel) {
+	// 获取当前验证的结构体实例，并断言为具体类型
 	su := sl.Current().Interface().(request.CreateCommentRequest)
+
 	if (su.ParentID == nil) != (su.RootID == nil) { // 只有一个为空，说明有问题
+		// 参数分别为：字段值，字段在结构体中的名称，字段在json中的名称，自定义错误标签，附加参数（空）
 		sl.ReportError(su.ParentID, "ParentID", "ParentID", "parent_root", "")
 		sl.ReportError(su.RootID, "RootID", "RootID", "parent_root", "")
 	}
