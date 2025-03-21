@@ -38,9 +38,9 @@ func VoteForPost(userID, postID string, direction float64) error {
 	//Val将结果转换为float64类型
 	postTime := client.ZScore(getRedisKey(KeyPostTimeZSet), postID).Val()
 
-	//如果帖子发布时间超过一周，则权重减半
+	//如果帖子发布时间超过一周，则减小权重
 	if float64(time.Now().Unix())-postTime > constants.OneWeekInSeconds {
-		weight = 0.5
+		weight = 0.8
 	}
 
 	//更新帖子分数

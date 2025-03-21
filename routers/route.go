@@ -93,7 +93,7 @@ func SetupRouter(mode string) *gin.Engine {
 		communityPost.POST("/upload", controller.UploadPostImageHandler)
 		// 删除帖子
 		communityPost.DELETE("/post/:id", controller.DeletePostHandler)
-		// 查询帖子列表（按热度倒序）
+		// 查询帖子列表（指定排序方式）
 		communityPost.GET("/posts", controller.GetPostListHandler)
 		// 查询帖子列表（指定社区）（指定排序方式，默认按时间倒序）
 		communityPost.GET("/community/:id/posts", controller.GetCommunityPostListHandler)
