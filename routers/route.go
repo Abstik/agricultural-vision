@@ -80,8 +80,16 @@ func SetupRouter(mode string) *gin.Engine {
 	}
 
 	// 社区帖子模块
-	communityPost := r.Group("/community-post", middleware.JWTAuthMiddleware())
+	communityPost := r.Group("/community-post")
 	{
+		// 查询帖子列表（指定排序方式）
+		communityPost.GET("/posts", controller.GetPostListHandler)
+		// 查询帖子列表（指定社区）（指定排序方式，默认按时间倒序）
+		communityPost.GET("/community/:id/posts", controller.GetCommunityPostListHandler)
+
+		// jwt校验
+		communityPost.Use(middleware.JWTAuthMiddleware())
+
 		// 查询社区列表
 		communityPost.GET("/community", controller.CommunityHandler)
 		// 查询社区详情
@@ -89,14 +97,10 @@ func SetupRouter(mode string) *gin.Engine {
 
 		// 发布帖子
 		communityPost.POST("/post", controller.CreatePostHandler)
-		// 上传图片
+		// 上传帖子图片
 		communityPost.POST("/upload", controller.UploadPostImageHandler)
 		// 删除帖子
 		communityPost.DELETE("/post/:id", controller.DeletePostHandler)
-		// 查询帖子列表（指定排序方式）
-		communityPost.GET("/posts", controller.GetPostListHandler)
-		// 查询帖子列表（指定社区）（指定排序方式，默认按时间倒序）
-		communityPost.GET("/community/:id/posts", controller.GetCommunityPostListHandler)
 		// 帖子投票
 		communityPost.POST("/post/vote", controller.PostVoteController)
 

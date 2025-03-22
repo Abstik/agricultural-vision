@@ -126,11 +126,16 @@ func GetPostListByIDs(ids []string, userId int64) (postResponses []*response.Pos
 			continue
 		}
 
-		//查询当前用户是否点赞了此帖子
-		liked, err := redis.IsUserLikedPost(strconv.Itoa(int(userId)), strconv.Itoa(int(post.ID)))
-		if err != nil { // 遇到错误不返回，继续执行后续逻辑
-			zap.L().Error("查询用户是否点赞失败", zap.Error(err))
-			continue
+		// 查询当前用户是否点赞了此帖子
+		var liked bool
+		if userId == 0 { // 如果用户未登录，则所有帖子都未点赞
+			liked = false
+		} else { // 如果用户已登录，则查询用户是否点赞了此帖子
+			liked, err = redis.IsUserLikedPost(strconv.Itoa(int(userId)), strconv.Itoa(int(post.ID)))
+			if err != nil { // 遇到错误不返回，继续执行后续逻辑
+				zap.L().Error("查询用户是否点赞失败", zap.Error(err))
+				continue
+			}
 		}
 
 		//封装查询到的信息

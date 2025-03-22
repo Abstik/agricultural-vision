@@ -162,6 +162,12 @@ func GetUserInfoHandler(c *gin.Context) {
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
 		return
 	}
+	// 查询发过的帖子数量
+	if err := mysql.DB.Model(&entity.Post{}).Where("author_id = ?", userID).Count(&data.PostNum).Error; err != nil {
+		zap.L().Error("查询个人发帖数量失败", zap.Error(err))
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
 	ResponseSuccess(c, data)
 	return
 }
