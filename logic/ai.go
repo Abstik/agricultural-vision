@@ -28,7 +28,7 @@ func AiTalk(aiRequest *request.AiRequest, userID int64) (aiResponse *response.Ai
 		// 用户没有对话历史，创建一个新的
 		conversation = &response.Conversation{
 			Messages: []response.Message{
-				{Content: settings.Conf.AiConfig.SystemContent, Role: "system"},
+				{Content: settings.Conf.AiConfig.SystemContent1, Role: "system"},
 			},
 		}
 		userConversations[id] = conversation

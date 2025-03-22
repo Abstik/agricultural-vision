@@ -51,10 +51,12 @@ type LogConfig struct {
 }
 
 type AiConfig struct {
-	SystemContent string `mapstructure:"system_content"`
-	ApiKey        string `mapstructure:"api_key"`
-	ApiUrl        string `mapstructure:"api_url"`
-	Model         string `mapstructure:"model"`
+	SystemContent1 string `mapstructure:"system_content1"`
+	SystemContent2 string `mapstructure:"system_content2"`
+	SystemContent3 string `mapstructure:"system_content3"`
+	ApiKey         string `mapstructure:"api_key"`
+	ApiUrl         string `mapstructure:"api_url"`
+	Model          string `mapstructure:"model"`
 }
 
 type AliossConfig struct {
