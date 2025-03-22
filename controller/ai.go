@@ -28,7 +28,7 @@ func AiHandler(c *gin.Context) {
 	}
 
 	// 调用逻辑层
-	aiResponse, err := logic.AiTalk(&aiRequest, userID)
+	aiResponse, err := logic.AiTalk(aiRequest.UserInput, userID, aiRequest.Role)
 	if err != nil {
 		zap.L().Error("AI对话失败", zap.Error(err))
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)

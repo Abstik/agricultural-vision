@@ -5,40 +5,54 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strconv"
 	"sync"
 
 	"agricultural_vision/constants"
-	"agricultural_vision/models/request"
 	"agricultural_vision/models/response"
 	"agricultural_vision/settings"
 )
 
-var userConversations = make(map[string]*response.Conversation) // 使用 map 保存每个用户的对话历史
-var mutex = sync.Mutex{}                                        // 保护 map 的并发访问
+var userConversations = make(map[int64]map[int64]*response.Conversation) // 使用 map 保存每个用户的不同ai模型的对话历史
+var mutex = sync.Mutex{}                                                 // 保护 map 的并发访问
 
-func AiTalk(aiRequest *request.AiRequest, userID int64) (aiResponse *response.AiResponse, err error) {
+func AiTalk(userInput string, userID, aiModel int64) (aiResponse *response.AiResponse, err error) {
 	aiResponse = new(response.AiResponse)
-	id := strconv.FormatInt(userID, 10)
+
+	// 初始化systemContent，用来保存不同ai模型的系统提示
+	systemContent := [5]string{
+		"",
+		settings.Conf.AiConfig.SystemContent1,
+		settings.Conf.AiConfig.SystemContent2,
+		settings.Conf.AiConfig.SystemContent3,
+		settings.Conf.AiConfig.SystemContent4,
+	}
 
 	// 获取或创建该用户的对话历史
 	mutex.Lock() // 锁住整个 map，确保线程安全
-	conversation, exists := userConversations[id]
+	// 获取该用户的对话历史
+	userConversation, exists := userConversations[userID]
+	// 如果该用户不存在，则创建一个空的对话历史
 	if !exists {
-		// 用户没有对话历史，创建一个新的
-		conversation = &response.Conversation{
+		userConversations[userID] = make(map[int64]*response.Conversation)
+		userConversation = userConversations[userID]
+	}
+
+	// 获取该用户对应 AI 角色的对话历史
+	userAIConversation, exists := userConversation[aiModel]
+	if !exists {
+		userAIConversation = &response.Conversation{
 			Messages: []response.Message{
-				{Content: settings.Conf.AiConfig.SystemContent1, Role: "system"},
+				{Content: systemContent[aiModel], Role: "system"}, // 每个AI角色的初始设定
 			},
 		}
-		userConversations[id] = conversation
+		userConversation[aiModel] = userAIConversation
 	}
 	mutex.Unlock()
 
-	// 将用户输入添加到对话历史中
-	conversation.Mutex.Lock()
-	conversation.Messages = append(conversation.Messages, response.Message{Content: aiRequest.UserInput, Role: "user"})
-	conversation.Mutex.Unlock()
+	// 将用户输入添加到对应的ai对话历史中
+	userAIConversation.Mutex.Lock()
+	userAIConversation.Messages = append(userAIConversation.Messages, response.Message{Content: userInput, Role: "user"})
+	userAIConversation.Mutex.Unlock()
 
 	// 向智谱清言发送请求
 	apiKey := settings.Conf.AiConfig.ApiKey
@@ -47,7 +61,7 @@ func AiTalk(aiRequest *request.AiRequest, userID int64) (aiResponse *response.Ai
 	// 构建请求体
 	body := map[string]interface{}{
 		"model":    settings.Conf.AiConfig.Model, // 请根据需要选择模型
-		"messages": conversation.Messages,
+		"messages": userAIConversation.Messages,
 	}
 
 	// 序列化请求体
@@ -93,9 +107,9 @@ func AiTalk(aiRequest *request.AiRequest, userID int64) (aiResponse *response.Ai
 		aiAnswer := apiResponse.Choices[0].Message.Content
 
 		// 将 AI 的回答添加到对话历史中
-		conversation.Mutex.Lock()
-		conversation.Messages = append(conversation.Messages, response.Message{Content: aiAnswer, Role: "assistant"})
-		conversation.Mutex.Unlock()
+		userAIConversation.Mutex.Lock()
+		userAIConversation.Messages = append(userAIConversation.Messages, response.Message{Content: aiAnswer, Role: "assistant"})
+		userAIConversation.Mutex.Unlock()
 
 		// 返回 AI 的回答给前端
 		aiResponse.Answer = aiAnswer

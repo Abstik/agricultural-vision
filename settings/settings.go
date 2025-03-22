@@ -54,6 +54,7 @@ type AiConfig struct {
 	SystemContent1 string `mapstructure:"system_content1"`
 	SystemContent2 string `mapstructure:"system_content2"`
 	SystemContent3 string `mapstructure:"system_content3"`
+	SystemContent4 string `mapstructure:"system_content4"`
 	ApiKey         string `mapstructure:"api_key"`
 	ApiUrl         string `mapstructure:"api_url"`
 	Model          string `mapstructure:"model"`
