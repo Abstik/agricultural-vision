@@ -99,7 +99,7 @@ func GetPostListHandler(c *gin.Context) {
 
 	// 获取userID
 	userID, err := middleware.GetCurrentUserID(c)
-	if err != nil {
+	if errors.Is(err, constants.ErrorNeedLogin) {
 		// 如果用户未登录，也可以查询帖子列表
 		data, err := logic.GetPostList(p, 0)
 		if err != nil {
@@ -143,7 +143,7 @@ func GetCommunityPostListHandler(c *gin.Context) {
 
 	// 获取userID
 	userID, err := middleware.GetCurrentUserID(c)
-	if err != nil {
+	if errors.Is(err, constants.ErrorNeedLogin) {
 		data, err := logic.GetCommunityPostList(p, communityID, 0)
 		if err != nil {
 			zap.L().Error("根据社区查询帖子列表失败", zap.Error(err))
@@ -174,7 +174,11 @@ func GetUserPostListHandler(c *gin.Context) {
 		return
 	}
 
-	listRequest := new(request.ListRequest)
+	listRequest := &request.ListRequest{
+		Page:  1,
+		Size:  10,
+		Order: constants.OrderTime,
+	}
 	if err := c.ShouldBindQuery(listRequest); err != nil {
 		zap.L().Error("参数校验失败", zap.Error(err))
 		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
@@ -199,7 +203,11 @@ func GetUserLikedPostListHandler(c *gin.Context) {
 		return
 	}
 
-	listRequest := new(request.ListRequest)
+	listRequest := &request.ListRequest{
+		Page:  1,
+		Size:  10,
+		Order: constants.OrderTime,
+	}
 	if err := c.ShouldBindQuery(listRequest); err != nil {
 		zap.L().Error("参数校验失败", zap.Error(err))
 		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)

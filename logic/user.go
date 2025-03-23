@@ -108,9 +108,10 @@ func UpdateUserInfo(p *request.UpdateUserInfoRequest, id int64) error {
 
 	// 2. 更新用户信息
 	newUser := entity.User{
-		Username: p.Username,
-		Email:    p.Email,
-		Avatar:   p.Avatar,
+		BaseModel: entity.BaseModel{ID: id},
+		Username:  p.Username,
+		Email:     p.Email,
+		Avatar:    p.Avatar,
 	}
 
 	return mysql.UpdateUserByID(&newUser)

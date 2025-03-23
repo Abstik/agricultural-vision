@@ -11,6 +11,8 @@ var (
 	ErrorEmailNotExist    = errors.New(CodeEmailNotExist)
 	ErrorInvalidPassword  = errors.New(CodeInvalidPassword)
 	ErrorInvalidEmailCode = errors.New(CodeInvalidEmailCode)
+	ErrorNeedLogin        = errors.New(CodeNeedLogin)
+	ErrorInvalidAToken    = errors.New(CodeInvalidToken)
 	ErrorAiNotAnswer      = errors.New(CodeAiNotAnswer)
 	ErrorNotAffectData    = errors.New(CodeNotAffectData)
 	ErrorNoResult         = errors.New(CodeNoResult)

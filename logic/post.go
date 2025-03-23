@@ -87,7 +87,7 @@ func DeletePost(postID int64, userID int64) error {
 }
 
 // 根据id列表查询帖子列表，并封装响应数据
-func GetPostListByIDs(ids []string, userId int64) (postResponses []*response.PostResponse, err error) {
+func GetPostListByIDs(ids []string, userID int64) (postResponses []*response.PostResponse, err error) {
 	//调用此函数前，已经对ids进行判断，不为空
 
 	//根据id列表去数据库查询帖子详细信息
@@ -127,11 +127,9 @@ func GetPostListByIDs(ids []string, userId int64) (postResponses []*response.Pos
 		}
 
 		// 查询当前用户是否点赞了此帖子
-		var liked bool
-		if userId == 0 { // 如果用户未登录，则所有帖子都未点赞
-			liked = false
-		} else { // 如果用户已登录，则查询用户是否点赞了此帖子
-			liked, err = redis.IsUserLikedPost(strconv.Itoa(int(userId)), strconv.Itoa(int(post.ID)))
+		liked := false
+		if userID != 0 { // 如果用户已登录，则查询用户是否点赞了此帖子
+			liked, err = redis.IsUserLikedPost(strconv.Itoa(int(userID)), strconv.Itoa(int(post.ID)))
 			if err != nil { // 遇到错误不返回，继续执行后续逻辑
 				zap.L().Error("查询用户是否点赞失败", zap.Error(err))
 				continue

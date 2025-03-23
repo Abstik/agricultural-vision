@@ -82,48 +82,56 @@ func SetupRouter(mode string) *gin.Engine {
 	// 社区帖子模块
 	communityPost := r.Group("/community-post")
 	{
-		// 查询帖子列表（指定排序方式）
-		communityPost.GET("/posts", controller.GetPostListHandler)
-		// 查询帖子列表（指定社区）（指定排序方式，默认按时间倒序）
-		communityPost.GET("/community/:id/posts", controller.GetCommunityPostListHandler)
+		/*公开接口，不需要登录*/
 
-		// jwt校验
-		communityPost.Use(middleware.JWTAuthMiddleware())
-
+		// 查询帖子列表（指定排序方式）（游客登录）
+		communityPost.GET("/posts/guest", controller.GetPostListHandler)
+		// 查询帖子列表（指定社区）（指定排序方式，默认按时间倒序）（游客登录）
+		communityPost.GET("/community/:id/posts/guest", controller.GetCommunityPostListHandler)
 		// 查询社区列表
 		communityPost.GET("/community", controller.CommunityHandler)
 		// 查询社区详情
 		communityPost.GET("/community/:id", controller.CommunityDetailHandler)
 
-		// 发布帖子
-		communityPost.POST("/post", controller.CreatePostHandler)
-		// 上传帖子图片
-		communityPost.POST("/upload", controller.UploadPostImageHandler)
-		// 删除帖子
-		communityPost.DELETE("/post/:id", controller.DeletePostHandler)
-		// 帖子投票
-		communityPost.POST("/post/vote", controller.PostVoteController)
+		/*需要登录的接口*/
+		authCommunityPost := r.Group("/community-post")
+		{
 
-		// 发布评论
-		communityPost.POST("/comment", controller.CreateCommentHandler)
-		// 删除评论
-		communityPost.DELETE("/comment/:id", controller.DeleteCommentHandler)
-		// 查询顶级评论（指定排序方式，默认按时间倒序）
-		communityPost.GET("/first-level-comment/:post_id", controller.GetTopCommentListHandler)
-		// 查询子评论（按时间正序）
-		communityPost.GET("/second-level-comment/:comment_id", controller.GetSonCommentListHandler)
-		// 评论投票
-		communityPost.POST("/comment/vote", controller.CommentVoteController)
+			// 使用jwt校验
+			authCommunityPost.Use(middleware.JWTAuthMiddleware())
 
-		userCommunityPost := communityPost.Group("/user", middleware.JWTAuthMiddleware())
+			// 查询帖子列表（指定排序方式）（用户登录）
+			authCommunityPost.GET("/posts", controller.GetPostListHandler)
+			// 查询帖子列表（指定社区）（指定排序方式，默认按时间倒序）（用户登录）
+			authCommunityPost.GET("/community/:id/posts", controller.GetCommunityPostListHandler)
+			// 发布帖子
+			authCommunityPost.POST("/post", controller.CreatePostHandler)
+			// 上传帖子图片
+			authCommunityPost.POST("/upload", controller.UploadPostImageHandler)
+			// 删除帖子
+			authCommunityPost.DELETE("/post/:id", controller.DeletePostHandler)
+			// 帖子投票
+			authCommunityPost.POST("/post/vote", controller.PostVoteController)
+
+			// 发布评论
+			authCommunityPost.POST("/comment", controller.CreateCommentHandler)
+			// 删除评论
+			authCommunityPost.DELETE("/comment/:id", controller.DeleteCommentHandler)
+			// 查询顶级评论（指定排序方式，默认按时间倒序）
+			authCommunityPost.GET("/first-level-comment/:post_id", controller.GetTopCommentListHandler)
+			// 查询子评论（按时间正序）
+			authCommunityPost.GET("/second-level-comment/:comment_id", controller.GetSonCommentListHandler)
+			// 评论投票
+			authCommunityPost.POST("/comment/vote", controller.CommentVoteController)
+		}
+
+		userCommunityPost := authCommunityPost.Group("/user")
 		{
 			// 查询用户的帖子列表（分页）
 			userCommunityPost.GET("/posts", controller.GetUserPostListHandler)
 			// 查询用户点赞的帖子列表（分页）
 			userCommunityPost.GET("/likes", controller.GetUserLikedPostListHandler)
-
 		}
-
 	}
 
 	r.NoRoute(func(c *gin.Context) {
