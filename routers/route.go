@@ -83,7 +83,6 @@ func SetupRouter(mode string) *gin.Engine {
 	communityPost := r.Group("/community-post")
 	{
 		/*公开接口，不需要登录*/
-
 		// 查询帖子列表（指定排序方式）（游客登录）
 		communityPost.GET("/posts/guest", controller.GetPostListHandler)
 		// 查询帖子列表（指定社区）（指定排序方式，默认按时间倒序）（游客登录）
@@ -121,6 +120,8 @@ func SetupRouter(mode string) *gin.Engine {
 			authCommunityPost.GET("/first-level-comment/:post_id", controller.GetTopCommentListHandler)
 			// 查询子评论（按时间正序）
 			authCommunityPost.GET("/second-level-comment/:comment_id", controller.GetSonCommentListHandler)
+			// 查询帖子所有评论（指定排序方式，默认按时间倒序）
+			authCommunityPost.GET("/comment/:post_id", controller.GetCommentListHandler)
 			// 评论投票
 			authCommunityPost.POST("/comment/vote", controller.CommentVoteController)
 		}

@@ -127,7 +127,7 @@ func DeleteComment(commentID int64, userID int64) error {
 }
 
 // 查询单个帖子的顶级评论
-func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest, userID int64) (commentListResponse *response.CommentListResponse, err error) {
+func GetTopCommentList(postID int64, listRequest *request.ListRequest, userID int64) (commentListResponse *response.CommentListResponse, err error) {
 	commentListResponse = &response.CommentListResponse{
 		Comments: []*response.CommentResponse{},
 	}
@@ -191,7 +191,7 @@ func GetFirstLevelCommentList(postID int64, listRequest *request.ListRequest, us
 }
 
 // 查询单个顶级评论的子评论
-func GetSecondLevelCommentList(rootID int64, listRequest *request.ListRequest, userID int64) (commentListResponse *response.CommentListResponse, err error) {
+func GetSonCommentList(rootID int64, listRequest *request.ListRequest, userID int64) (commentListResponse *response.CommentListResponse, err error) {
 	commentListResponse = &response.CommentListResponse{
 		Comments: []*response.CommentResponse{},
 	}
@@ -270,4 +270,72 @@ func GetSecondLevelCommentList(rootID int64, listRequest *request.ListRequest, u
 		commentListResponse.Comments = append(commentListResponse.Comments, commentResponse)
 	}
 	return
+}
+
+// 查询帖子下的所有评论
+func GetCommentList(postID int64, listRequest *request.ListRequest, userID int64) (*response.CommentListResponse, error) {
+	commentListResponse := &response.CommentListResponse{
+		Comments: []*response.CommentResponse{},
+	}
+
+	// 执行业务
+	topCommentList, err := GetTopCommentList(postID, listRequest, userID)
+	if err != nil {
+		zap.L().Error("查询帖子的一级评论失败", zap.Error(err))
+		return nil, err
+	}
+	commentListResponse.Total += topCommentList.Total
+
+	// 遍历一级评论列表
+	for _, topComment := range topCommentList.Comments {
+		// 封装单个一级评论进响应体
+		commentListResponse.Comments = append(commentListResponse.Comments, &response.CommentResponse{
+			ID:           topComment.ID,
+			Content:      topComment.Content,
+			Author:       topComment.Author,
+			LikeCount:    topComment.LikeCount,
+			Liked:        topComment.Liked,
+			RepliesCount: topComment.RepliesCount,
+			CreatedAt:    topComment.CreatedAt,
+		})
+
+		// 获取单个一级评论的所有二级评论
+		sonCommentList, err := GetSonCommentList(topComment.ID, listRequest, userID)
+		if err != nil {
+			zap.L().Error("查询帖子的二级评论失败", zap.Error(err))
+			return nil, err
+		}
+		commentListResponse.Total += sonCommentList.Total
+
+		// 遍历单个一级评论的二级评论列表
+		for _, sonComment := range sonCommentList.Comments {
+			// 判读是否为二级评论
+			if sonComment.Parent != nil {
+				// 如果是二级评论
+				commentListResponse.Comments = append(commentListResponse.Comments, &response.CommentResponse{
+					ID:        sonComment.ID,
+					Content:   sonComment.Content,
+					Author:    sonComment.Author,
+					LikeCount: sonComment.LikeCount,
+					Liked:     sonComment.Liked,
+					CreatedAt: sonComment.CreatedAt,
+					RootID:    topComment.ID,
+				})
+				continue
+			}
+
+			// 如果是二级以上评论
+			commentListResponse.Comments = append(commentListResponse.Comments, &response.CommentResponse{
+				ID:        sonComment.ID,
+				Content:   sonComment.Content,
+				Author:    sonComment.Author,
+				LikeCount: sonComment.LikeCount,
+				Liked:     sonComment.Liked,
+				Parent:    sonComment.Parent,
+				CreatedAt: sonComment.CreatedAt,
+				RootID:    topComment.ID,
+			})
+		}
+	}
+	return commentListResponse, nil
 }

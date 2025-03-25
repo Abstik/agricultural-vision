@@ -117,7 +117,7 @@ func GetTopCommentListHandler(c *gin.Context) {
 	}
 
 	// 查询顶级评论
-	commentListResponse, err := logic.GetFirstLevelCommentList(postID, listRequest, userID)
+	commentListResponse, err := logic.GetTopCommentList(postID, listRequest, userID)
 	if err != nil {
 		zap.L().Error("查询顶级评论失败", zap.Error(err))
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
@@ -152,9 +152,41 @@ func GetSonCommentListHandler(c *gin.Context) {
 		return
 	}
 
-	commentListResponse, err := logic.GetSecondLevelCommentList(commentID, listRequest, userID)
+	commentListResponse, err := logic.GetSonCommentList(commentID, listRequest, userID)
 	if err != nil {
 		zap.L().Error("查询子评论失败", zap.Error(err))
+		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
+		return
+	}
+	ResponseSuccess(c, commentListResponse)
+}
+
+// 查询帖子的所有评论
+func GetCommentListHandler(c *gin.Context) {
+	// 绑定参数
+	postIDStr := c.Param("post_id")
+	postID, err1 := strconv.ParseInt(postIDStr, 10, 64)
+	listRequest := &request.ListRequest{
+		Page:  1,
+		Size:  10,
+		Order: constants.OrderTime,
+	}
+	err2 := c.ShouldBindJSON(&listRequest)
+	if err1 != nil || err2 != nil {
+		zap.L().Error("参数不正确", zap.Error(err1), zap.Error(err2))
+		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)
+		return
+	}
+
+	userID, err := middleware.GetCurrentUserID(c)
+	if err != nil {
+		zap.L().Error("获取userID失败", zap.Error(err))
+		return
+	}
+
+	commentListResponse, err := logic.GetCommentList(postID, listRequest, userID)
+	if err != nil {
+		zap.L().Error("查询评论失败", zap.Error(err))
 		ResponseError(c, http.StatusInternalServerError, constants.CodeServerBusy)
 		return
 	}
