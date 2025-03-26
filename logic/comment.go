@@ -69,6 +69,8 @@ func CreateComment(createCommentRequest *request.CreateCommentRequest, userID in
 			Author:    author,
 			Parent:    parentUserinfo,
 			CreatedAt: comment.CreatedAt.Format("2006-01-02 15:04:05"),
+			RootID:    *comment.RootID,
+			ParentID:  *comment.ParentID,
 		}
 		return commentResponse, nil
 	}
@@ -80,6 +82,7 @@ func CreateComment(createCommentRequest *request.CreateCommentRequest, userID in
 			Content:   comment.Content,
 			Author:    author,
 			CreatedAt: comment.CreatedAt.Format("2006-01-02 15:04:05"),
+			RootID:    *comment.RootID,
 		}
 		return commentResponse, nil
 	}
