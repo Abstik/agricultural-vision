@@ -11,7 +11,7 @@ const (
 	KeyCommunitySetPF  = "community:"  // set; key=community:{communityID}, 成员=postID（社区帖子集合）
 
 	// 针对高并发单独维护计数的key
-	KeyPostCommentNumZSet = "post:comment_num" // zset; key=post:comment_num, 成员=postID, 分数=评论数
+	KeyPostCommentNumZSet = "post:comment_num" // zset; key=post:comment_num, 成员=postID, 分数=总评论数
 	KeyCommentNumZSet     = "comment:num"      // zset; key=comment:num, 成员=commentID, 分数=子评论数
 
 	// 评论相关

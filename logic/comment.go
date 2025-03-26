@@ -44,7 +44,7 @@ func CreateComment(createCommentRequest *request.CreateCommentRequest, userID in
 		err = redis.CreateTopComment(comment.ID, comment.PostID)
 	} else {
 		// 创建子评论
-		err = redis.CreateSonComment(*createCommentRequest.RootID)
+		err = redis.CreateSonComment(*createCommentRequest.RootID, createCommentRequest.PostID)
 	}
 	if err != nil {
 		return nil, err
@@ -307,10 +307,10 @@ func GetCommentList(postID int64, listRequest *request.ListRequest, userID int64
 		}
 		commentListResponse.Total += sonCommentList.Total
 
-		// 遍历单个一级评论的二级评论列表
+		// 遍历单个一级评论的子评论列表
 		for _, sonComment := range sonCommentList.Comments {
 			// 判读是否为二级评论
-			if sonComment.Parent != nil {
+			if sonComment.Parent == nil {
 				// 如果是二级评论
 				commentListResponse.Comments = append(commentListResponse.Comments, &response.CommentResponse{
 					ID:        sonComment.ID,

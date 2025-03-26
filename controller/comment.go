@@ -171,7 +171,7 @@ func GetCommentListHandler(c *gin.Context) {
 		Size:  10,
 		Order: constants.OrderTime,
 	}
-	err2 := c.ShouldBindJSON(&listRequest)
+	err2 := c.ShouldBindQuery(&listRequest)
 	if err1 != nil || err2 != nil {
 		zap.L().Error("参数不正确", zap.Error(err1), zap.Error(err2))
 		ResponseError(c, http.StatusBadRequest, constants.CodeInvalidParam)

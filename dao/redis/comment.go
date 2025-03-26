@@ -45,10 +45,14 @@ func CreateTopComment(commentID, postID int64) error {
 }
 
 // 创建子评论
-func CreateSonComment(rootID int64) error {
+func CreateSonComment(rootID, postID int64) error {
 	rootIDStr := strconv.FormatInt(rootID, 10)
+	postIDStr := strconv.FormatInt(postID, 10)
 
-	//在redis中更新子评论数（累计+1）
+	// 在redis中更新评论数（累计+1）
+	client.ZIncrBy(getRedisKey(KeyPostCommentNumZSet), 1, postIDStr)
+
+	// 在redis中更新子评论数（累计+1）
 	err := client.ZIncrBy(getRedisKey(KeyCommentNumZSet), 1, rootIDStr).Err()
 
 	return err
@@ -77,8 +81,9 @@ func DeleteComment(commentID, postID int64, rootID *int64) error {
 	if rootID == nil {
 		pipeline.ZIncrBy(getRedisKey(KeyPostCommentNumZSet), -1, postIDStr)
 	} else {
-		// 6. 如果是子评论，减少父评论的子评论数
+		// 6. 如果是子评论，减少帖子总评论数并且减少父评论的子评论数
 		rootIDStr := strconv.FormatInt(*rootID, 10)
+		pipeline.ZIncrBy(getRedisKey(KeyPostCommentNumZSet), -1, postIDStr)
 		pipeline.ZIncrBy(getRedisKey(KeyCommentNumZSet), -1, rootIDStr)
 	}
 
@@ -128,7 +133,7 @@ func GetCommentVoteDataByIDs(ids []string) (data []int64, err error) {
 	return data, nil
 }
 
-// 根据帖子id列表查询帖子的顶级评论数
+// 根据帖子id列表查询帖子的评论数
 func GetCommentNumByIDs(ids []string) ([]float64, error) {
 	// 使用 pipeline 批量执行 Redis 命令
 	pipeline := client.Pipeline()

@@ -93,7 +93,7 @@ func SetupRouter(mode string) *gin.Engine {
 		communityPost.GET("/community/:id", controller.CommunityDetailHandler)
 
 		/*需要登录的接口*/
-		authCommunityPost := r.Group("/community-post")
+		authCommunityPost := communityPost.Group("/")
 		{
 
 			// 使用jwt校验
