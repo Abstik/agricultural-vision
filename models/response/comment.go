@@ -11,6 +11,7 @@ type CommentResponse struct {
 	Parent       *UserBriefResponse `json:"parent,omitempty"`        // 父评论的作者信息（只有二级以上评论需要）
 	CreatedAt    string             `json:"created_at"`              // 发布时间
 	RootID       int64              `json:"root_id,omitempty"`       // 根评论id（子评论都需要）
+	ParentID     int64              `json:"parent_id,omitempty"`     // 父评论id（为适配前端，只有二级以上评论需要）
 }
 
 // 分页查询评论响应体

@@ -251,6 +251,8 @@ func GetSonCommentList(rootID int64, listRequest *request.ListRequest, userID in
 				Liked:     liked,
 				Parent:    parentUserBriefInfo,
 				CreatedAt: comment.CreatedAt.Format("2006-01-02 15:04:05"),
+				RootID:    *comment.RootID,
+				ParentID:  *comment.ParentID,
 			}
 
 			commentListResponse.Comments = append(commentListResponse.Comments, commentResponse)
@@ -265,6 +267,7 @@ func GetSonCommentList(rootID int64, listRequest *request.ListRequest, userID in
 			LikeCount: voteData[idx],
 			Liked:     liked,
 			CreatedAt: comment.CreatedAt.Format("2006-01-02 15:04:05"),
+			RootID:    *comment.RootID,
 		}
 
 		commentListResponse.Comments = append(commentListResponse.Comments, commentResponse)
@@ -334,6 +337,7 @@ func GetCommentList(postID int64, listRequest *request.ListRequest, userID int64
 				Parent:    sonComment.Parent,
 				CreatedAt: sonComment.CreatedAt,
 				RootID:    topComment.ID,
+				ParentID:  sonComment.ParentID,
 			})
 		}
 	}
