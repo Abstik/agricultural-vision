@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"sync"
 
+	"go.uber.org/zap"
+
 	"agricultural_vision/constants"
 	"agricultural_vision/models/response"
 	"agricultural_vision/settings"
@@ -67,12 +69,14 @@ func AiTalk(userInput string, userID, aiModel int64) (aiResponse *response.AiRes
 	// 序列化请求体
 	jsonData, err := json.Marshal(body)
 	if err != nil {
+		zap.L().Error("序列化请求体失败", zap.Error(err))
 		return
 	}
 
 	// 创建 HTTP 请求
 	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
 	if err != nil {
+		zap.L().Error("创建HTTP请求失败", zap.Error(err))
 		return
 	}
 
@@ -83,6 +87,7 @@ func AiTalk(userInput string, userID, aiModel int64) (aiResponse *response.AiRes
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		zap.L().Error("发送请求失败", zap.Error(err))
 		return
 	}
 	defer func(Body io.ReadCloser) {
@@ -92,6 +97,7 @@ func AiTalk(userInput string, userID, aiModel int64) (aiResponse *response.AiRes
 	// 读取响应体
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
+		zap.L().Error("读取响应体失败", zap.Error(err))
 		return
 	}
 
@@ -99,6 +105,7 @@ func AiTalk(userInput string, userID, aiModel int64) (aiResponse *response.AiRes
 	var apiResponse response.ApiResponse
 	err = json.Unmarshal(bodyBytes, &apiResponse)
 	if err != nil {
+		zap.L().Error("解析AI响应失败", zap.Error(err))
 		return
 	}
 

@@ -240,7 +240,7 @@ func GetSonCommentList(rootID int64, listRequest *request.ListRequest, userID in
 		//如果是二级以上评论，则需要查询父评论的作者信息
 		if *comment.ParentID != *comment.RootID {
 			//查询父评论的作者简略信息
-			parentUserBriefInfo, err := mysql.GetUserBriefInfo(comment.AuthorID)
+			parentUserBriefInfo, err := mysql.GetUserBriefInfoByCommentID(*comment.ParentID)
 			if err != nil {
 				zap.L().Error("查询父评论作者信息失败", zap.Error(err))
 				continue
