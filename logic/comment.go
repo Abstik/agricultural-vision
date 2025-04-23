@@ -158,7 +158,7 @@ func GetTopCommentList(postID int64, listRequest *request.ListRequest, userID in
 	}
 
 	// 查询所有顶级评论的子评论数——切片
-	commentNum, err := redis.GetSecondLevelCommentNumByIDs(ids)
+	commentNum, err := redis.GetSonCommentNumByIDs(ids)
 
 	//将帖子作者及分区信息查询出来填充到帖子中
 	for idx, comment := range comments {

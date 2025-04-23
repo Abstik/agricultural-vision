@@ -77,9 +77,19 @@ func DeleteComment(commentID, postID int64, rootID *int64) error {
 	// 4. 从评论数集合中删除该评论（一级评论才有效）
 	pipeline.ZRem(getRedisKey(KeyCommentNumZSet), commentIDStr)
 
-	// 5. 如果是顶级评论，减少帖子总评论数
+	// 5. 如果是顶级评论，减少帖子总评论数（减少：顶级评论的子评论数+1）
 	if rootID == nil {
-		pipeline.ZIncrBy(getRedisKey(KeyPostCommentNumZSet), -1, postIDStr)
+		// 查找该评论的子评论数
+		sonCommentNum, err := GetSonCommentNumByIDs([]string{commentIDStr})
+		if err != nil {
+			return err
+		}
+		if len(sonCommentNum) == 0 {
+			return constants.ErrorNoResult
+		}
+
+		// 减少帖子总评论数
+		pipeline.ZIncrBy(getRedisKey(KeyPostCommentNumZSet), -1-sonCommentNum[0], postIDStr)
 	} else {
 		// 6. 如果是子评论，减少帖子总评论数并且减少父评论的子评论数
 		rootIDStr := strconv.FormatInt(*rootID, 10)
@@ -167,7 +177,7 @@ func GetCommentNumByIDs(ids []string) ([]float64, error) {
 }
 
 // 根据顶级评论id列表查询顶级评论的子评论数
-func GetSecondLevelCommentNumByIDs(ids []string) (nums []float64, err error) {
+func GetSonCommentNumByIDs(ids []string) (nums []float64, err error) {
 	// 使用 pipeline 批量执行 Redis 命令
 	pipeline := client.Pipeline()
 

@@ -25,12 +25,12 @@ func CreateComment(comment *entity.Comment) error {
 
 // 删除评论
 func DeleteComment(commentID int64) error {
-	result := DB.Delete(&entity.Comment{}, commentID)
+	// 判断是否是一级评论
 
+	result := DB.Delete(&entity.Comment{}, commentID)
 	if result.Error != nil {
 		return result.Error
 	}
-
 	if result.RowsAffected == 0 {
 		return constants.ErrorNotAffectData
 	}
